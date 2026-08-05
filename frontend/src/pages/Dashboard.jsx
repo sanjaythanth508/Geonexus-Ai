@@ -202,23 +202,35 @@ export default function Dashboard() {
 
         {/* Right: User Menu + Logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '5px 10px', borderRadius: 'var(--r-sm)',
-            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)',
-          }} className="hide-mobile">
-            <div style={{
-              width: '26px', height: '26px', borderRadius: '50%',
-              background: 'var(--grad-brand)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '11px', fontWeight: '800', color: '#fff',
-            }}>
-              {user?.username?.[0]?.toUpperCase() || 'U'}
-            </div>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>
-              {user?.username || 'Operator'}
+          <button
+            onClick={() => navigate('/profile')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '5px 12px', borderRadius: 'var(--r-sm)',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-subtle)',
+              cursor: 'pointer', color: 'var(--text-primary)', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.background = 'rgba(34,211,238,0.06)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+            title="Manage Profile"
+          >
+            {user?.profile?.avatar_url || user?.avatar_url ? (
+              <img src={user?.profile?.avatar_url || user?.avatar_url} alt="Profile" style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{
+                width: '26px', height: '26px', borderRadius: '50%',
+                background: 'var(--grad-brand)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '11px', fontWeight: '800', color: '#fff',
+              }}>
+                {(user?.profile?.full_name || user?.username || 'U')[0].toUpperCase()}
+              </div>
+            )}
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }} className="hide-mobile">
+              {user?.profile?.full_name || user?.username || 'Operator'}
             </span>
-          </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
 
           <button
             onClick={() => setShowLogout(true)}
@@ -309,14 +321,15 @@ export default function Dashboard() {
               <button
                 onClick={() => setSidebarOpen(true)}
                 style={{
-                  position: 'absolute', top: '76px', left: '10px', zIndex: 800,
+                  position: 'absolute', top: '16px', left: '16px', zIndex: 800,
                   width: '38px', height: '38px', borderRadius: '10px',
-                  background: '#ffffff', border: 'none',
+                  background: 'rgba(11, 15, 25, 0.92)', border: '1px solid rgba(56, 189, 248, 0.35)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)', cursor: 'pointer',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)', cursor: 'pointer',
+                  backdropFilter: 'blur(12px)',
                 }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" strokeWidth="2.5">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2.5">
                   <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
                 </svg>
               </button>

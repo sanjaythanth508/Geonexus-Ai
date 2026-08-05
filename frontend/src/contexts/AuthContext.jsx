@@ -1,5 +1,6 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import api from '../api/client';
+import { getUserProfile } from '../api/auth';
 
 const AuthContext = createContext();
 
@@ -7,45 +8,53 @@ export const AuthProvider = ({ children }) => {
   const [authState, setAuthState] = useState(() => {
     const savedUser = localStorage.getItem('geonexus_user');
     const token = localStorage.getItem('access_token');
-    const isAuth = localStorage.getItem('is_authenticated') === 'true';
 
     let resolvedUser = null;
-    if (savedUser) {
+    if (token && savedUser) {
       try {
         resolvedUser = JSON.parse(savedUser);
       } catch (e) {}
     }
-    
-    // Fallback if token or is_authenticated exists but user string wasn't cached
-    if (!resolvedUser && (token || isAuth)) {
-      resolvedUser = { username: 'Operator' };
-    }
-
-    // Default fallback so dashboard refresh always maintains session
-    if (!resolvedUser) {
-      resolvedUser = { username: 'Operator' };
-      localStorage.setItem('is_authenticated', 'true');
-    }
 
     return {
-      user: resolvedUser,
+      user: token ? (resolvedUser || { username: 'Operator' }) : null,
       loading: false
     };
   });
 
   const { user, loading } = authState;
 
+  // Refresh current user details from backend profile endpoint
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await getUserProfile();
+      if (res.data) {
+        localStorage.setItem('geonexus_user', JSON.stringify(res.data));
+        setAuthState(prev => ({ ...prev, user: res.data }));
+        return res.data;
+      }
+    } catch (e) {
+      // If fetching full profile fails, fallback gracefully
+    }
+  }, []);
+
   const loginUser = async (username, password) => {
     const res = await api.post('users/token/', { username, password });
-    const userObj = { username };
     localStorage.setItem('access_token', res.data.access);
     localStorage.setItem('refresh_token', res.data.refresh);
-    localStorage.setItem('geonexus_user', JSON.stringify(userObj));
     localStorage.setItem('is_authenticated', 'true');
-    setAuthState({
-      user: userObj,
-      loading: false
-    });
+    
+    // Try to fetch full profile object
+    try {
+      const profileRes = await getUserProfile();
+      const userObj = profileRes.data;
+      localStorage.setItem('geonexus_user', JSON.stringify(userObj));
+      setAuthState({ user: userObj, loading: false });
+    } catch (e) {
+      const userObj = { username };
+      localStorage.setItem('geonexus_user', JSON.stringify(userObj));
+      setAuthState({ user: userObj, loading: false });
+    }
     return res;
   };
 
@@ -67,6 +76,14 @@ export const AuthProvider = ({ children }) => {
     return nextUser;
   };
 
+  const updateUserState = (updatedUserObj) => {
+    localStorage.setItem('geonexus_user', JSON.stringify(updatedUserObj));
+    setAuthState(prev => ({
+      ...prev,
+      user: updatedUserObj
+    }));
+  };
+
   const logout = () => {
     localStorage.clear();
     setAuthState({
@@ -76,7 +93,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, loginWithTokens, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, loginWithTokens, updateUserState, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

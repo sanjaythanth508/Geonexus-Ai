@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import PredictionReport from './pages/PredictionReport';
 
 /* ── Premium Loading Screen ── */
 function LoadingScreen() {
@@ -71,6 +73,8 @@ function AppRoutes() {
       <Route path="/login"     element={<Login />} />
       <Route path="/register"  element={<Register />} />
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
+      <Route path="/report"    element={<PrivateRoute><PredictionReport /></PrivateRoute>} />
       <Route path="/"          element={<HomeRedirect />} />
     </Routes>
   );

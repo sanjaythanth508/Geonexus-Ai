@@ -70,9 +70,6 @@ function ParticleField() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   ANIMATED LOGO GLOBE
-═══════════════════════════════════════════════ */
 function GlobeIcon({ size = 36 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
@@ -97,9 +94,6 @@ function GlobeIcon({ size = 36 }) {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   ICON COMPONENTS
-═══════════════════════════════════════════════ */
 const UserIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const LockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
 const EyeIcon  = ({open}) => open
@@ -117,9 +111,6 @@ function LoadSpinner() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   FLOATING ORB DECORATIONS
-═══════════════════════════════════════════════ */
 function Orbs() {
   return (
     <>
@@ -127,15 +118,10 @@ function Orbs() {
         background:'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 65%)', pointerEvents:'none', animation:'floatSlow 8s ease-in-out infinite' }} />
       <div style={{ position:'absolute', bottom:'-15%', right:'-8%', width:'600px', height:'600px', borderRadius:'50%',
         background:'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 65%)', pointerEvents:'none', animation:'floatSlow 10s ease-in-out infinite 3s' }} />
-      <div style={{ position:'absolute', top:'40%', left:'50%', width:'300px', height:'300px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(59,130,246,0.05) 0%, transparent 65%)', pointerEvents:'none', transform:'translate(-50%,-50%)' }} />
     </>
   );
 }
 
-/* ═══════════════════════════════════════════════
-   ORBIT RINGS (decorative)
-═══════════════════════════════════════════════ */
 function OrbitRings() {
   return (
     <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
@@ -153,9 +139,6 @@ function OrbitRings() {
   );
 }
 
-/* ═══════════════════════════════════════════════
-   MAIN LOGIN PAGE
-═══════════════════════════════════════════════ */
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -212,8 +195,14 @@ export default function Login() {
     setError('');
     try {
       const data = await loginWithGoogle(credentialResponse.credential);
-      loginWithTokens(data, 'Google User');
-      navigate('/dashboard', { replace: true });
+      loginWithTokens(data, data.user?.username || 'Google User');
+      
+      if (data.is_new_user) {
+        // Redirect to registration page with Google payload pre-populated
+        navigate('/register', { state: { googleInfo: data.google_info } });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Google authentication failed.');
       setShakeKey(k => k + 1);
@@ -346,14 +335,14 @@ export default function Login() {
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Username</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Username or Email</label>
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
                       <UserIcon />
                     </span>
                     <input
                       type="text"
-                      placeholder="Your username"
+                      placeholder="Your username or email"
                       value={username}
                       onChange={e => setUsername(e.target.value)}
                       className="input-field"
@@ -365,7 +354,7 @@ export default function Login() {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Password</label>
                   </div>
                   <div style={{ position: 'relative' }}>
@@ -386,8 +375,6 @@ export default function Login() {
                       type="button"
                       onClick={() => setShowPass(v => !v)}
                       style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '4px', borderRadius: '6px', transition: 'color 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--cyan)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                     >
                       <EyeIcon open={showPass} />
                     </button>
@@ -406,14 +393,12 @@ export default function Login() {
                 </button>
               </form>
 
-              {/* Decorative Divider */}
               <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
                 <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
                 <span style={{ padding: '0 12px', fontSize: '12px', color: 'var(--text-muted)' }}>or</span>
                 <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
               </div>
 
-              {/* Centralized Glassmorphic Google Container */}
               <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <GoogleLogin
                   theme="dark"
@@ -433,9 +418,7 @@ export default function Login() {
             ...tf, opacity: step >= 3 ? 1 : 0, transform: step >= 3 ? 'none' : 'translateY(12px)',
           }}>
             Don't have an account?{' '}
-            <Link to="/register" style={{ color: 'var(--cyan)', fontWeight: '700', textDecoration: 'none', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+            <Link to="/register" style={{ color: 'var(--cyan)', fontWeight: '700', textDecoration: 'none' }}>
               Create one →
             </Link>
           </p>
