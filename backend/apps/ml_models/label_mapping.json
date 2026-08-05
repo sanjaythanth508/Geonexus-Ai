@@ -1,0 +1,42 @@
+{
+  "label_order": [
+    "Poor",
+    "Moderate",
+    "Good",
+    "Excellent"
+  ],
+  "label_to_int": {
+    "Poor": 0,
+    "Moderate": 1,
+    "Good": 2,
+    "Excellent": 3
+  },
+  "feature_cols": [
+    "raw_dist_local_road_m",
+    "raw_dist_highway_m",
+    "raw_dist_railway_m",
+    "raw_dist_substation_m",
+    "raw_dist_transline_m",
+    "raw_dist_gasline_m",
+    "raw_dist_river_m",
+    "raw_dist_lake_m",
+    "raw_dist_indl_estate_m",
+    "raw_dist_airport_m",
+    "raw_dist_port_m",
+    "raw_slope_deg",
+    "raw_dist_place_m",
+    "raw_poi_density",
+    "raw_building_density",
+    "raw_dist_hospital_m",
+    "raw_dist_iti_m",
+    "raw_dist_bank_m",
+    "raw_dist_warehouse_m",
+    "raw_dist_freight_m",
+    "raw_dist_emergency_m",
+    "raw_landuse_favorability",
+    "raw_literacy_rate",
+    "raw_health_infra_index",
+    "raw_water_stress_pct",
+    "raw_climate_risk_index"
+  ]
+}
