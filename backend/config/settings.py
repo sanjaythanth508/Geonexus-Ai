@@ -9,6 +9,10 @@ GDAL_LIBRARY_PATH = r'C:\Program Files\QGIS 3.44.10\bin\gdal312.dll'
 if os.path.exists(GDAL_LIBRARY_PATH):
     os.environ['GDAL_LIBRARY_PATH'] = GDAL_LIBRARY_PATH
     os.environ['PROJ_LIB'] = r'C:\Program Files\QGIS 3.44.10\share\proj'
+    try:
+        os.add_dll_directory(r'C:\Program Files\QGIS 3.44.10\bin')
+    except Exception:
+        pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,10 +21,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
+# Fix HuggingFace symlink and redownloading issues on Windows
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
+
 # Security
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+
+import os
+from pathlib import Path
+
+GEONEXUS_DATA_DIR = os.environ.get("GEONEXUS_DATA_DIR", "")
+LGB_OUT_DIR        = os.environ.get("LGB_OUT_DIR", "")
+KB_DIR              = os.environ.get("KB_DIR", "")
+GIS_DIR             = os.environ.get("GIS_DIR", "")
+STRUCTURED_DIR      = os.environ.get("STRUCTURED_DIR", "")
+CHATBOT_DIR         = os.environ.get("CHATBOT_DIR", "")
+QWEN_MODEL_NAME     = os.environ.get("QWEN_MODEL_NAME", "Qwen/Qwen3-4B-Instruct-2507")
+GEONEXUS_DEVICE     = os.environ.get("GEONEXUS_DEVICE", "cpu")
 
 # Application definition
 INSTALLED_APPS = [

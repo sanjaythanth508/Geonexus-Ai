@@ -6,7 +6,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 90000, // 90 seconds for ML inference & GIS processing
+  timeout: 600000, // 10 minutes for ML inference & model downloading
 });
 
 // ========================
@@ -17,7 +17,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("access_token");
 
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.set("Authorization", `Bearer ${token}`);
     }
 
     return config;
@@ -52,7 +52,7 @@ api.interceptors.response.use(
 
           localStorage.setItem("access_token", res.data.access);
 
-          originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
+          originalRequest.headers.set("Authorization", `Bearer ${res.data.access}`);
 
           return api(originalRequest);
         } catch (err) {

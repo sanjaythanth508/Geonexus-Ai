@@ -203,6 +203,29 @@ export default function Dashboard() {
         {/* Right: User Menu + Logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
+            onClick={() => navigate('/chat')}
+            className="btn-ghost"
+            style={{
+              padding: '6px 14px', borderRadius: 'var(--r-sm)',
+              background: 'linear-gradient(135deg, rgba(34,211,238,0.1), rgba(59,130,246,0.1))',
+              border: '1px solid rgba(34,211,238,0.3)',
+              color: 'var(--cyan)', fontWeight: '600', fontSize: '13px',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              cursor: 'pointer', transition: 'all 0.2s ease',
+              boxShadow: '0 0 10px rgba(34,211,238,0.1)'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(59,130,246,0.2))'; e.currentTarget.style.boxShadow = '0 0 15px rgba(34,211,238,0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34,211,238,0.1), rgba(59,130,246,0.1))'; e.currentTarget.style.boxShadow = '0 0 10px rgba(34,211,238,0.1)'; }}
+            title="Open GeoChat AI"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <path d="M12 11h.01M8 11h.01M16 11h.01"/>
+            </svg>
+            <span className="hide-mobile">GeoChat AI</span>
+          </button>
+
+          <button
             onClick={() => navigate('/profile')}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',

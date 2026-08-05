@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import PredictionReport from './pages/PredictionReport';
+import GeoChat from './pages/GeoChat';
 
 /* ── Premium Loading Screen ── */
 function LoadingScreen() {
@@ -75,6 +76,7 @@ function AppRoutes() {
       <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
       <Route path="/report"    element={<PrivateRoute><PredictionReport /></PrivateRoute>} />
+      <Route path="/chat"      element={<PrivateRoute><GeoChat /></PrivateRoute>} />
       <Route path="/"          element={<HomeRedirect />} />
     </Routes>
   );

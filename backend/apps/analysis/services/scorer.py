@@ -4,12 +4,43 @@ in the app should import ml.predictor directly.
 """
 from apps.analysis.ml.predictor import get_predictor
 from apps.analysis.models import AnalysisRun
+from apps.analysis.ml import config as ML_CONFIG
+import pandas as pd
 
+INDUSTRY_TYPES = list(ML_CONFIG.INDUSTRY_TYPE_KEYWORDS.keys())
+
+def sanitize_nan(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize_nan(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_nan(v) for v in obj]
+    elif pd.isna(obj):
+        return None
+    return obj
+
+def get_suitability(lat: float, lon: float, industry_type: str) -> dict:
+    try:
+        predictor = get_predictor()
+        res = predictor.predict_location(lat, lon, industry_type)
+        res = sanitize_nan(res)
+        # map to the keys that chat.py expects
+        return {
+            "latitude": res["latitude"],
+            "longitude": res["longitude"],
+            "industry_type": res["industry_type"],
+            "final_suitability_score": res["mcda_final_suitability_score"],
+            "ml_predicted_label": res["lightgbm_predicted_label"],
+            "ml_probabilities": res["lightgbm_probabilities"],
+            "criteria_breakdown": res["criteria_breakdown"]
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 def run_and_save_analysis(*, user, latitude: float, longitude: float, industry_type: str,
                            project=None) -> AnalysisRun:
     predictor = get_predictor()
     result = predictor.predict_location(latitude, longitude, industry_type)
+    result = sanitize_nan(result)
 
     probs = result["lightgbm_probabilities"]
     ml_score = (
