@@ -362,18 +362,26 @@ def chat(user_message, history=None, max_tool_rounds=6):
     context = ""
     msg_lower = user_message.lower()
     
-    # 1. Suitability Tool
-    if "suitab" in msg_lower or "score" in msg_lower or ("lat" in msg_lower and "lon" in msg_lower):
+    # 1. Suitability & District Resolution Tool
+    if "suitab" in msg_lower or "score" in msg_lower or ("lat" in msg_lower and "lon" in msg_lower) or "district" in msg_lower:
         lat, lon = extract_lat_lon(user_message)
         if lat is not None and lon is not None:
             industry = extract_industry(user_message)
             suit = call_tool("get_suitability", {"lat": lat, "lon": lon, "industry_type": industry})
             if "error" not in suit:
+                if suit.get("district"):
+                    context += f"- Resolved District for coordinates ({lat}, {lon}) is {suit['district']}.\n"
                 context += f"- Suitability Score for {industry} at ({lat}, {lon}) is {suit['final_suitability_score']}/100.\n"
-                context += f"- ML Predicted Label: {suit['lightgbm_predicted_label']}.\n"
-                context += "- Weakest Factors:\n"
-                for factor in suit['weakest_factors']:
-                    context += f"  - {factor['factor']}: {factor['score_0_100']}\n"
+                context += f"- ML Predicted Label: {suit.get('ml_predicted_label', 'Unknown')}.\n"
+                
+                # Derive weakest factors from criteria_breakdown
+                breakdown = suit.get('criteria_breakdown', {})
+                if breakdown:
+                    # Sort criteria by score_100 ascending to find the weakest factors
+                    weakest = sorted(breakdown.items(), key=lambda x: x[1].get('score_100', 0))[:5]
+                    context += "- Weakest Factors:\n"
+                    for factor, info in weakest:
+                        context += f"  - {factor}: {info.get('score_100', 0)}\n"
     
     # 2. Nearest Feature Tool
     if "nearest" in msg_lower or "how far" in msg_lower or "distance" in msg_lower:

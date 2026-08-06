@@ -28,6 +28,7 @@ def get_suitability(lat: float, lon: float, industry_type: str) -> dict:
             "latitude": res["latitude"],
             "longitude": res["longitude"],
             "industry_type": res["industry_type"],
+            "district": res.get("district"),
             "final_suitability_score": res["mcda_final_suitability_score"],
             "ml_predicted_label": res["lightgbm_predicted_label"],
             "ml_probabilities": res["lightgbm_probabilities"],
