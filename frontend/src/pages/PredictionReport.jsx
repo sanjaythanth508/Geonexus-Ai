@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import html2pdf from 'html2pdf.js';
+import LocationCompareModal from '../components/Analysis/LocationCompareModal';
+import { findSuggestion } from '../api/analysis';
 
 /* ── Icons ── */
 const ArrowLeftIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
@@ -23,9 +25,19 @@ export default function PredictionReport() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [downloading, setDownloading] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+
+  const [searchingSuggestion, setSearchingSuggestion] = useState(false);
+  const [searchedSuggestion, setSearchedSuggestion] = useState(false);
   
   const [result] = useState(() => {
     return location.state?.result || JSON.parse(sessionStorage.getItem('last_prediction_report') || 'null');
+  });
+
+  const [suggestion, setSuggestion] = useState(() => {
+    const cached = result?.better_site_suggestion || JSON.parse(sessionStorage.getItem('better_site_suggestion') || 'null');
+    if (cached) setSearchedSuggestion(true);
+    return cached;
   });
 
   useEffect(() => {
@@ -46,10 +58,10 @@ export default function PredictionReport() {
           No Analysis Report Loaded
         </h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '24px', maxWidth: '400px' }}>
-          Please run a geospatial suitability prediction on the Control Desk first.
+          Please run a geospatial suitability prediction first.
         </p>
-        <button onClick={() => navigate('/dashboard')} className="btn-primary">
-          <ArrowLeftIcon /> Return to Control Desk
+        <button onClick={() => navigate('/home')} className="btn-primary">
+          <ArrowLeftIcon /> Return to Home
         </button>
       </div>
     );
@@ -96,6 +108,30 @@ export default function PredictionReport() {
 
   const sortedCriteria = Object.entries(criteria_breakdown || {})
     .sort((a, b) => (b[1]?.weight || 0) - (a[1]?.weight || 0));
+
+  const handleFindSuggestion = async () => {
+    if (!result || searchingSuggestion) return;
+    setSearchingSuggestion(true);
+    try {
+      const res = await findSuggestion({
+        latitude,
+        longitude,
+        industryType: industry_type,
+        currentScore: scoreNum
+      });
+      setSuggestion(res || null);
+      if (res) {
+        sessionStorage.setItem('better_site_suggestion', JSON.stringify(res));
+      } else {
+        sessionStorage.removeItem('better_site_suggestion');
+      }
+      setSearchedSuggestion(true);
+    } catch (e) {
+      console.error("Suggestion search error:", e);
+    } finally {
+      setSearchingSuggestion(false);
+    }
+  };
 
   const reportDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -164,11 +200,11 @@ export default function PredictionReport() {
         backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-subtle)',
         position: 'sticky', top: 0, zIndex: 100,
       }}>
-        <Link to="/dashboard" style={{
+        <Link to="/home" style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
           color: 'var(--cyan)', textDecoration: 'none', fontWeight: '700', fontSize: '14px',
         }}>
-          <ArrowLeftIcon /> Control Desk
+          <ArrowLeftIcon /> Home
         </Link>
 
         <button
@@ -331,8 +367,129 @@ export default function PredictionReport() {
             <span>Official Confidential Audit Report</span>
           </div>
 
+          {/* Navigation & Optimization Bottom Action Bar */}
+          {!searchedSuggestion && !searchingSuggestion && (
+            <div style={{
+              marginTop: '28px', padding: '20px', borderRadius: '16px',
+              background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
+            }}>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  💡 Location Optimization Engine
+                </div>
+                <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
+                  Scan GIDC industrial estates and 4-directional gradient within 20 km for a higher-scoring site.
+                </div>
+              </div>
+
+              <button
+                onClick={handleFindSuggestion}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 24px',
+                  background: 'var(--grad-btn)', border: 'none', borderRadius: '12px',
+                  color: '#fff', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(56,189,248,0.25)', fontFamily: 'var(--font-sans)'
+                }}
+              >
+                💡 Suggest Nearest Better Location (20km)
+              </button>
+            </div>
+          )}
+
+          {searchingSuggestion && (
+            <div style={{
+              marginTop: '28px', padding: '20px', borderRadius: '16px',
+              background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+              color: 'var(--cyan)', fontWeight: '700', fontSize: '14px'
+            }}>
+              <LoadSpinner /> Searching GIDC industrial estates & 4-directional gradient within 20 km...
+            </div>
+          )}
+
+          {searchedSuggestion && suggestion && suggestion.mcda_final_suitability_score && (
+            <div style={{
+              marginTop: '28px', padding: '20px', borderRadius: '16px',
+              background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
+            }}>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  💡 Optimized Site Available
+                </div>
+                <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
+                  Nearby location ({suggestion.district || 'Gujarat'}) offers a higher suitability score of <b>{Number(suggestion.mcda_final_suitability_score).toFixed(1)}/100</b>.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => navigate('/analysis/suggestion')}
+                  style={{
+                    padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700',
+                    background: '#10B981', border: 'none', color: '#fff', cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(16,185,129,0.25)', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  💡 View Suggested Location Report
+                </button>
+
+                <button
+                  onClick={() => setShowCompareModal(true)}
+                  style={{
+                    padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700',
+                    background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.3)',
+                    color: 'var(--cyan)', cursor: 'pointer', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  ⚖️ Compare Both Locations
+                </button>
+
+                <button
+                  onClick={() => navigate('/analysis/suggestion-map')}
+                  style={{
+                    padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700',
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-sans)'
+                  }}
+                >
+                  🗺️ View in Map
+                </button>
+              </div>
+            </div>
+          )}
+
+          {searchedSuggestion && (!suggestion || !suggestion.mcda_final_suitability_score) && (
+            <div style={{
+              marginTop: '28px', padding: '16px 20px', borderRadius: '16px',
+              background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.25)',
+              display: 'flex', alignItems: 'center', gap: '12px'
+            }}>
+              <span style={{ fontSize: '20px' }}>🌟</span>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Optimal Regional Location
+                </div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
+                  This selected location is already the best site for your <b>{industry_type}</b> facility within 20 km. No higher-scoring site was found nearby.
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
+
+      {showCompareModal && suggestion && (
+        <LocationCompareModal
+          isOpen={showCompareModal}
+          onClose={() => setShowCompareModal(false)}
+          selectedData={result}
+          suggestionData={suggestion}
+          onViewMap={() => navigate('/analysis/suggestion-map')}
+        />
+      )}
 
       {/* ── HIDDEN CLEAN WHITE TEMPLATE FOR PDF DOWNLOAD ONLY ── */}
       <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>

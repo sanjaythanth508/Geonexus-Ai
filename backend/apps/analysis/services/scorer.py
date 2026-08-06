@@ -6,6 +6,7 @@ from apps.analysis.ml.predictor import get_predictor
 from apps.analysis.models import AnalysisRun
 from apps.analysis.ml import config as ML_CONFIG
 import pandas as pd
+import math
 
 INDUSTRY_TYPES = list(ML_CONFIG.INDUSTRY_TYPE_KEYWORDS.keys())
 
@@ -17,6 +18,117 @@ def sanitize_nan(obj):
     elif pd.isna(obj):
         return None
     return obj
+
+def get_coordinates_at_distance(lat, lon, distance_km, bearing_deg):
+    lat_rad = math.radians(lat)
+    km_per_lat_deg = 111.32
+    km_per_lon_deg = 111.32 * math.cos(lat_rad)
+    
+    bearing_rad = math.radians(bearing_deg)
+    d_lat = (distance_km * math.cos(bearing_rad)) / km_per_lat_deg
+    d_lon = (distance_km * math.sin(bearing_rad)) / km_per_lon_deg
+    
+    return lat + d_lat, lon + d_lon
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+def find_better_nearby_location_ondemand(latitude: float, longitude: float, industry_type: str, current_score: float) -> dict:
+    try:
+        predictor = get_predictor()
+    except Exception as e:
+        print(f"[GeoNexus] Error loading predictor: {e}")
+        return None
+        
+    best_score = current_score
+    best_res = None
+    seen = set()
+
+    def eval_coord(clat, clon):
+        nonlocal best_score, best_res
+        if clat is None or clon is None or math.isnan(clat) or math.isnan(clon):
+            return None
+        d = haversine_km(latitude, longitude, clat, clon)
+        if d < 0.2 or d > 20.0:
+            return None
+        key = (round(clat, 4), round(clon, 4))
+        if key in seen:
+            return None
+        seen.add(key)
+
+        try:
+            res = predictor.predict_location(clat, clon, industry_type)
+            if res and res.get("district") and "error" not in res:
+                sc = res["mcda_final_suitability_score"]
+                if sc > best_score:
+                    best_score = sc
+                    best_res = res
+                    return res
+        except Exception:
+            pass
+        return None
+
+    # =========================================================================
+    # STEP 1 (FIRST PRIORITY): Check GIDC / Industrial Estates (IndustrialEstates.shp)
+    # =========================================================================
+    try:
+        from apps.analysis.ml.geo_layers import get_layers
+        layers = get_layers()
+        if hasattr(layers, "indl_est") and layers.indl_est is not None and len(layers.indl_est) > 0:
+            estates_wgs = layers.indl_est.to_crs("EPSG:4326")
+            for geom in estates_wgs.geometry:
+                if geom is not None and not geom.is_empty:
+                    centroid = geom.centroid
+                    eval_coord(centroid.y, centroid.x)
+    except Exception as e:
+        print(f"[GeoNexus] Note: GIDC/Industrial Estates search error: {e}")
+
+    # If Industrial Estates search yielded a significant improvement (score gain >= 1.5), return it immediately
+    if best_res and best_score >= current_score + 1.5:
+        return sanitize_nan(best_res)
+
+    # =========================================================================
+    # STEP 2: 4-Direction Gradient Search (North, East, South, West)
+    # =========================================================================
+    # Sample 5 km step in 4 cardinal directions: North (0deg), East (90deg), South (180deg), West (270deg)
+    directions = [0, 90, 180, 270]
+    direction_scores = {}
+
+    for deg in directions:
+        plat, plon = get_coordinates_at_distance(latitude, longitude, 5.0, deg)
+        res = eval_coord(plat, plon)
+        if res:
+            direction_scores[deg] = res["mcda_final_suitability_score"]
+
+    # Pick the direction that gave the highest score
+    best_dir = None
+    top_dir_score = current_score
+
+    for deg, sc in direction_scores.items():
+        if sc > top_dir_score:
+            top_dir_score = sc
+            best_dir = deg
+
+    # Walk along the promising direction up to 20 km
+    if best_dir is not None:
+        for dist in [8.0, 11.0, 14.0, 17.0, 19.5]:
+            plat, plon = get_coordinates_at_distance(latitude, longitude, dist, best_dir)
+            eval_coord(plat, plon)
+    else:
+        # Check intercardinal directions (NE, SE, SW, NW) at 10km and 18km if 5km sample did not find gradient
+        for deg in [45, 135, 225, 315]:
+            for dist in [8.0, 15.0, 19.0]:
+                plat, plon = get_coordinates_at_distance(latitude, longitude, dist, deg)
+                eval_coord(plat, plon)
+
+    if best_res and best_score > current_score:
+        return sanitize_nan(best_res)
+    return None
 
 def get_suitability(lat: float, lon: float, industry_type: str) -> dict:
     try:
@@ -51,6 +163,7 @@ def run_and_save_analysis(*, user, latitude: float, longitude: float, industry_t
         probs.get("Excellent", 0.0) * 95.0
     )
 
+    # Initial analysis runs fast; suggestions are triggered on-demand by user
     run = AnalysisRun.objects.create(
         user=user,
         latitude=result["latitude"],
@@ -73,6 +186,7 @@ def run_and_save_analysis(*, user, latitude: float, longitude: float, industry_t
         lightgbm_predicted_label=result["lightgbm_predicted_label"],
         lightgbm_probabilities=result["lightgbm_probabilities"],
         criteria_breakdown=result["criteria_breakdown"],
+        better_site_suggestion=None,
     )
     return run
 

@@ -28,6 +28,7 @@ export default function GeoChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
+  const nodeContextRef = useRef(null);  // stores node context for Ask About It
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const messagesEndRef = useRef(null);
@@ -35,13 +36,19 @@ export default function GeoChat() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // 1. Load sessions from localStorage on mount
-  useEffect(() => {
+  // 1. Load sessions from database on mount (with localStorage fallback)
+  const fetchDatabaseSessions = async () => {
+    setIsLoading(true);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      let loadedSessions = stored ? JSON.parse(stored) : [];
+      const res = await api.get('geochat/sessions/');
+      let loadedSessions = res.data.map(s => ({
+        id: s.session_id,
+        title: s.title,
+        createdAt: new Date(s.created_at).getTime(),
+        messages: s.messages.length > 0 ? s.messages : [WELCOME_MESSAGE]
+      }));
 
-      if (!loadedSessions || loadedSessions.length === 0) {
+      if (loadedSessions.length === 0) {
         const initialSession = {
           id: `session_${Date.now()}`,
           title: 'New Conversation',
@@ -49,7 +56,6 @@ export default function GeoChat() {
           messages: [WELCOME_MESSAGE]
         };
         loadedSessions = [initialSession];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedSessions));
       }
 
       setSessions(loadedSessions);
@@ -58,17 +64,59 @@ export default function GeoChat() {
       const matched = loadedSessions.find(s => s.id === lastActiveId);
       setActiveSessionId(matched ? matched.id : loadedSessions[0].id);
     } catch (e) {
-      console.error('Failed to load chat sessions:', e);
-      const fallback = [{
-        id: `session_${Date.now()}`,
-        title: 'New Conversation',
-        createdAt: Date.now(),
-        messages: [WELCOME_MESSAGE]
-      }];
-      setSessions(fallback);
-      setActiveSessionId(fallback[0].id);
+      console.error('Failed to load geochat sessions from database:', e);
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        let loadedSessions = stored ? JSON.parse(stored) : [];
+
+        if (loadedSessions.length === 0) {
+          loadedSessions = [{
+            id: `session_${Date.now()}`,
+            title: 'New Conversation',
+            createdAt: Date.now(),
+            messages: [WELCOME_MESSAGE]
+          }];
+        }
+        setSessions(loadedSessions);
+        setActiveSessionId(loadedSessions[0].id);
+      } catch (err) {
+        const fallback = [{
+          id: `session_${Date.now()}`,
+          title: 'New Conversation',
+          createdAt: Date.now(),
+          messages: [WELCOME_MESSAGE]
+        }];
+        setSessions(fallback);
+        setActiveSessionId(fallback[0].id);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDatabaseSessions();
+  }, []);
+
+  // Check for node context injected by NodeDetail "Ask About It" button
+  useEffect(() => {
+    const rawCtx = sessionStorage.getItem('geochat_node_context');
+    if (!rawCtx) return;
+    sessionStorage.removeItem('geochat_node_context');
+
+    try {
+      const ctx = JSON.parse(rawCtx);
+      // Store structured context in ref so the first send includes it
+      nodeContextRef.current = ctx;
+
+      const contextMsg = `Provide a full expert analysis and strategic recommendations for my deployed node **"${ctx.nodeName}"** located at **${ctx.district}** (${Number(ctx.lat).toFixed(5)}°N, ${Number(ctx.lon).toFixed(5)}°E) — industry: **${ctx.industry}**, suitability score **${ctx.score?.toFixed(1)}/100 (${ctx.label})**. Cover infrastructure, regulatory compliance, risks, and actionable recommendations.`;
+
+      setInput(contextMsg);
+    } catch (e) {
+      console.error('Failed to parse node context:', e);
     }
   }, []);
+
 
   // 2. Persist activeSessionId
   useEffect(() => {
@@ -112,8 +160,8 @@ export default function GeoChat() {
     setActiveSessionId(newSession.id);
   };
 
-  // Delete a chat session
-  const deleteSession = (idToDelete, e) => {
+  // Delete a chat session from DB & optimistic local state update
+  const deleteSession = async (idToDelete, e) => {
     e.stopPropagation();
     const updated = sessions.filter(s => s.id !== idToDelete);
     if (updated.length === 0) {
@@ -130,6 +178,12 @@ export default function GeoChat() {
       if (activeSessionId === idToDelete) {
         setActiveSessionId(updated[0].id);
       }
+    }
+
+    try {
+      await api.delete(`geochat/sessions/${idToDelete}/`);
+    } catch (err) {
+      console.error("Failed to delete chat session on database:", err);
     }
   };
 
@@ -271,9 +325,18 @@ export default function GeoChat() {
         .filter(m => m.role === 'user' || m.role === 'assistant')
         .map(m => ({ role: m.role, content: m.content }));
 
+      // If this is the first message in a node-context session, attach the node data
+      const nodeCtx = nodeContextRef.current;
+      if (nodeCtx && isFirstUserMsg) {
+        nodeContextRef.current = null; // consume after first send
+      }
+
       const res = await api.post('geochat/geochat/', {
+        session_id: targetSessionId,
+        title: newTitle,
         message: userMessage,
-        history: historyToPass.length > 0 ? historyToPass : undefined
+        history: historyToPass.length > 0 ? historyToPass : undefined,
+        ...(nodeCtx && isFirstUserMsg ? { node_context: nodeCtx } : {})
       });
 
       setIsLoading(false);
@@ -591,7 +654,7 @@ export default function GeoChat() {
             )}
 
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/home')}
               style={{
                 background: 'none',
                 border: 'none',
@@ -603,7 +666,7 @@ export default function GeoChat() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
-              title="Back to Dashboard"
+              title="Back to Home"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -614,16 +677,6 @@ export default function GeoChat() {
               <span style={{ fontWeight: '700', fontSize: '15px', letterSpacing: '-0.02em' }}>
                 <span style={{ color: '#22d3ee' }}>GeoNexus</span>
                 <span style={{ color: '#f8fafc' }}> AI</span>
-              </span>
-              <span style={{
-                fontSize: '11px',
-                background: 'rgba(34,211,238,0.15)',
-                color: '#22d3ee',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontWeight: '600'
-              }}>
-                GPT-4o Siting Engine
               </span>
             </div>
           </div>

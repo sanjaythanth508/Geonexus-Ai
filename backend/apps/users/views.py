@@ -1,21 +1,173 @@
 import requests
+import random
+import re
+import os
+import uuid
+from datetime import timedelta
+from django.utils import timezone
+from django.core.mail import send_mail
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import UserSerializer
-from .models import UserProfile
+from .models import UserProfile, EmailVerification
+
+
+class SendOTPView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if email is valid format
+        if not re.match(r"^[\w\.\+\-]+\@[\w\.\-]+\.[\w]{2,}$", email):
+            return Response({'error': 'Invalid email address format'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Check if email already registered
+        if User.objects.filter(email__iexact=email).exists():
+            return Response({'error': 'A user with this email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Generate 6-digit code
+        otp = f"{random.randint(100000, 999999)}"
+        
+        # Save OTP to Database (upsert)
+        verification, created = EmailVerification.objects.update_or_create(
+            email=email.lower(),
+            defaults={'otp': otp, 'is_verified': False, 'created_at': timezone.now()}
+        )
+        
+        # Send Email
+        subject = "Verify your GeoNexus AI Account"
+        message = f"Your GeoNexus AI account verification code is: {otp}\nThis code is valid for 10 minutes."
+        from_email = None # Will use DEFAULT_FROM_EMAIL from settings
+        
+        # Professional HTML email layout
+        html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Verify your GeoNexus AI Account</title>
+        </head>
+        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0e1a; color: #ffffff; padding: 40px 20px; margin: 0; text-align: center;">
+            <div style="max-width: 500px; margin: 0 auto; background: rgba(16, 22, 42, 0.95); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 40px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+                <!-- Logo / Branding -->
+                <div style="margin-bottom: 25px;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(135deg, #8B5CF6, #3B82F6, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #22D3EE; display: inline-block;">
+                        GeoNexus AI
+                    </h1>
+                    <p style="margin: 5px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #94A3B8; font-weight: 700;">
+                        Intelligent Industrial Site Selection
+                    </p>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 20px 0;">
+                
+                <!-- Main Message -->
+                <h2 style="font-size: 18px; font-weight: 700; color: #F1F5F9; margin-top: 0; margin-bottom: 12px;">
+                    Confirm Your Registration
+                </h2>
+                <p style="font-size: 14px; color: #94A3B8; line-height: 1.6; margin-bottom: 25px; text-align: left;">
+                    Welcome to the operator desk! To finalize setting up your account and start exploring site suitability models, please use the 6-digit confirmation code below:
+                </p>
+                
+                <!-- Verification Code Container -->
+                <div style="background: rgba(34, 211, 238, 0.05); border: 1px dashed rgba(34, 211, 238, 0.35); border-radius: 8px; padding: 18px 10px; margin-bottom: 25px;">
+                    <span style="font-size: 38px; font-weight: 900; letter-spacing: 12px; color: #22D3EE; font-family: 'Courier New', Courier, monospace;">
+                        {otp}
+                    </span>
+                </div>
+                
+                <p style="font-size: 12px; color: #64748B; margin-bottom: 20px; text-align: left; line-height: 1.5;">
+                    Security Note: This verification key is strictly valid for the next <strong>10 minutes</strong>. Please do not forward or share this code with anyone.
+                </p>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 20px 0;">
+                
+                <!-- Footer -->
+                <p style="font-size: 11px; color: #475569; margin: 0; line-height: 1.5; text-align: center;">
+                    This is an automated security transmission from GeoNexus AI. Replies to this email address are not monitored.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            send_mail(subject, message, from_email, [email], html_message=html_message)
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            return Response({'error': f'Failed to send verification email. Details: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return Response({'message': 'Verification code sent successfully.'}, status=status.HTTP_200_OK)
+
+
+class VerifyOTPView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        
+        if not email or not otp:
+            return Response({'error': 'Email and verification code are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        verification = EmailVerification.objects.filter(
+            email__iexact=email,
+            otp=otp,
+            created_at__gte=ten_minutes_ago
+        ).first()
+        
+        if not verification:
+            return Response({'error': 'Invalid or expired verification code.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        verification.is_verified = True
+        verification.save()
+        
+        return Response({'message': 'Email verified successfully.'}, status=status.HTTP_200_OK)
+
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
+        # Enforce email OTP verification for standard local registrations
+        verification = None
+        if 'password' in request.data:
+            email = request.data.get('email')
+            if not email:
+                return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+            verification = EmailVerification.objects.filter(
+                email__iexact=email, 
+                is_verified=True, 
+                created_at__gte=ten_minutes_ago
+            ).first()
+            
+            if not verification:
+                return Response({'error': 'Email verification required. Send and verify a code first.'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        # Now that validation is successful, delete the OTP verification record
+        if verification:
+            verification.delete()
+
         user = serializer.save()
+
 
         # Update profile if extra details were provided during registration
         profile, _ = UserProfile.objects.get_or_create(user=user)
@@ -167,3 +319,47 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+class AvatarUploadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request, *args, **kwargs):
+        if 'avatar' not in request.FILES:
+            return Response({'error': 'No image file provided under "avatar"'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        avatar_file = request.FILES['avatar']
+        
+        # Simple extension check
+        ext = os.path.splitext(avatar_file.name)[1].lower()
+        if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+            return Response({'error': 'Unsupported file type. Only JPG, PNG, GIF, and WEBP are allowed.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Max size check (5MB)
+        if avatar_file.size > 5 * 1024 * 1024:
+            return Response({'error': 'File size exceeds maximum limit of 5MB.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Create media avatars folder if it doesn't exist
+        avatars_dir = os.path.join(settings.MEDIA_ROOT, 'avatars')
+        os.makedirs(avatars_dir, exist_ok=True)
+        
+        # Create unique filename
+        filename = f"user_{request.user.id}_{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(avatars_dir, filename)
+        
+        # Save file chunks to media storage
+        with open(filepath, 'wb+') as destination:
+            for chunk in avatar_file.chunks():
+                destination.write(chunk)
+                
+        # Save avatar URL relative path to user profile
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+        avatar_url = f"{settings.MEDIA_URL}avatars/{filename}"
+        profile.avatar_url = avatar_url
+        profile.save()
+        
+        return Response({
+            'message': 'Avatar uploaded successfully',
+            'avatar_url': avatar_url
+        }, status=status.HTTP_200_OK)

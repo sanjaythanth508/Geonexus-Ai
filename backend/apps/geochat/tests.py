@@ -159,11 +159,24 @@ class GeoChatMultiDomainTests(TestCase):
 class GeoChatAPITests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username="chat_operator",
+            email="operator@example.com",
+            password="Secr3tP@ss123!"
+        )
+        self.client.force_authenticate(user=self.user)
+        self.session_id = "session_test_12345"
 
     def test_geochat_comparison_endpoint(self):
         response = self.client.post(
             "/api/geochat/geochat/",
-            {"message": "which city is preferable for cotton industry surat or ahemedabad?"},
+            {
+                "session_id": self.session_id,
+                "title": "Cotton Siting",
+                "message": "which city is preferable for cotton industry surat or ahemedabad?"
+            },
             format="json"
         )
         self.assertEqual(response.status_code, 200)
@@ -171,13 +184,35 @@ class GeoChatAPITests(TestCase):
         self.assertIn("Head-to-Head", response.data["answer"])
         self.assertIn("metadata", response.data)
         self.assertEqual(response.data["metadata"]["intent"], "LOCATION_COMPARISON")
+        
+        # Verify database persistence
+        from .models import ChatSession, ChatMessage
+        self.assertTrue(ChatSession.objects.filter(session_id=self.session_id, user=self.user).exists())
+        self.assertEqual(ChatMessage.objects.filter(session__session_id=self.session_id).count(), 2)
 
-    def test_geochat_soil_endpoint(self):
-        response = self.client.post(
+    def test_geochat_sessions_list_and_delete(self):
+        # 1. Create a session via POST
+        self.client.post(
             "/api/geochat/geochat/",
-            {"message": "What are the soil types and construction suitability in South Gujarat?"},
+            {
+                "session_id": self.session_id,
+                "title": "Soil suitability",
+                "message": "What are the soil types and construction suitability in South Gujarat?"
+            },
             format="json"
         )
+        
+        # 2. Get list of sessions
+        response = self.client.get("/api/geochat/sessions/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("answer", response.data)
-        self.assertIn("Soil", response.data["answer"])
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["session_id"], self.session_id)
+        self.assertEqual(len(response.data[0]["messages"]), 2)
+        
+        # 3. Delete session
+        response = self.client.delete(f"/api/geochat/sessions/{self.session_id}/")
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify deleted
+        response = self.client.get("/api/geochat/sessions/")
+        self.assertEqual(len(response.data), 0)

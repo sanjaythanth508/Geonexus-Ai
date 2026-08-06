@@ -257,6 +257,8 @@ export default function MapComponent({
   center = [71.1924, 22.2587], // Centered over Gujarat state
   zoom = 7,
   markers = [],
+  initialLocation = null,
+  readOnly = false,
 }) {
   const mapRef = useRef(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -265,22 +267,32 @@ export default function MapComponent({
   const [showInstruction, setShowInstruction] = useState(true);
   const [warningMessage, setWarningMessage] = useState(null);
 
-  // Restore saved location from sessionStorage if inside Gujarat
+  // Restore saved location from sessionStorage or initialLocation if inside Gujarat
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem("analysisLocation");
-      if (saved && saved !== "undefined") {
-        const loc = JSON.parse(saved);
-        if (loc && typeof loc.latitude === "number" && typeof loc.longitude === "number") {
-          if (isInsideGujarat(loc.latitude, loc.longitude)) {
-            setAnalysisLocation(loc);
-            setShowInstruction(false);
-            notifyParent(loc);
-            setTimeout(() => {
-              mapRef.current?.flyTo({ center: [loc.longitude, loc.latitude], zoom: 14, speed: 1.2 });
-            }, 400);
-          } else {
-            sessionStorage.removeItem("analysisLocation");
+      if (initialLocation) {
+        if (isInsideGujarat(initialLocation.latitude, initialLocation.longitude)) {
+          setAnalysisLocation(initialLocation);
+          setShowInstruction(false);
+          setTimeout(() => {
+            mapRef.current?.flyTo({ center: [initialLocation.longitude, initialLocation.latitude], zoom: 12, speed: 1.2 });
+          }, 400);
+        }
+      } else {
+        const saved = sessionStorage.getItem("analysisLocation");
+        if (saved && saved !== "undefined") {
+          const loc = JSON.parse(saved);
+          if (loc && typeof loc.latitude === "number" && typeof loc.longitude === "number") {
+            if (isInsideGujarat(loc.latitude, loc.longitude)) {
+              setAnalysisLocation(loc);
+              setShowInstruction(false);
+              notifyParent(loc);
+              setTimeout(() => {
+                mapRef.current?.flyTo({ center: [loc.longitude, loc.latitude], zoom: 14, speed: 1.2 });
+              }, 400);
+            } else {
+              sessionStorage.removeItem("analysisLocation");
+            }
           }
         }
       }
@@ -290,10 +302,10 @@ export default function MapComponent({
     }
     const t = setTimeout(() => setShowInstruction(false), 6000);
     return () => clearTimeout(t);
-  }, []);
+  }, [initialLocation]);
 
   const notifyParent = (coords) => {
-    if (onLocationSelect) {
+    if (onLocationSelect && !readOnly) {
       onLocationSelect({ lat: coords.latitude, lon: coords.longitude });
     }
   };
@@ -341,6 +353,7 @@ export default function MapComponent({
 
   // ----- Map click handler
   const handleMapTap = (e) => {
+    if (readOnly) return;
     const { lng, lat } = e.lngLat;
     if (!isInsideGujarat(lat, lng)) {
       setWarningMessage(`Location (${lat.toFixed(4)}, ${lng.toFixed(4)}) is OUTSIDE Gujarat! Please select a location inside Gujarat.`);
@@ -357,6 +370,7 @@ export default function MapComponent({
 
   // ----- Clear pin
   const handleConfirmClear = () => {
+    if (readOnly) return;
     setAnalysisLocation(null);
     sessionStorage.removeItem("analysisLocation");
     setShowConfirmModal(false);
@@ -369,60 +383,62 @@ export default function MapComponent({
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
 
       {/* ── HIGHLY STYLED FLOATING LIVE LOCATION PILL BUTTON ── */}
-      <button
-        onClick={handleGpsSync}
-        disabled={gpsLoading}
-        title={gpsLoading ? "Acquiring GPS Signal..." : "Locate My GPS Position in Gujarat"}
-        style={{
-          position: "absolute",
-          top: "16px",
-          right: "16px",
-          zIndex: 800,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "9px",
-          padding: "10px 18px",
-          background: "linear-gradient(135deg, rgba(11, 15, 25, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid rgba(56, 189, 248, 0.35)",
-          borderRadius: "var(--r-full)",
-          color: "#F8FAFC",
-          fontSize: "12.5px",
-          fontWeight: "700",
-          fontFamily: "var(--font-sans)",
-          cursor: gpsLoading ? "not-allowed" : "pointer",
-          transition: "all 0.25s var(--ease-out)",
-          boxShadow: "0 10px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2)",
-          userSelect: "none",
-        }}
-        onMouseEnter={e => {
-          if (!gpsLoading) {
-            e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.7)';
-            e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.4)';
-          }
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.transform = 'translateY(0) scale(1)';
-          e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.35)';
-          e.currentTarget.style.boxShadow = '0 10px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2)';
-        }}
-      >
-        <div style={{
-          width: '24px', height: '24px', borderRadius: '50%',
-          background: 'rgba(56, 189, 248, 0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <TargetCrosshairIcon loading={gpsLoading} />
-        </div>
-        <span>{gpsLoading ? "Locking GPS..." : "Live Location"}</span>
-      </button>
+      {!readOnly && (
+        <button
+          onClick={handleGpsSync}
+          disabled={gpsLoading}
+          title={gpsLoading ? "Acquiring GPS Signal..." : "Locate My GPS Position in Gujarat"}
+          style={{
+            position: "absolute",
+            top: "80px",
+            right: "16px",
+            zIndex: 800,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "9px",
+            padding: "10px 18px",
+            background: "linear-gradient(135deg, rgba(11, 15, 25, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(56, 189, 248, 0.35)",
+            borderRadius: "var(--r-full)",
+            color: "#F8FAFC",
+            fontSize: "12.5px",
+            fontWeight: "700",
+            fontFamily: "var(--font-sans)",
+            cursor: gpsLoading ? "not-allowed" : "pointer",
+            transition: "all 0.25s var(--ease-out)",
+            boxShadow: "0 10px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2)",
+            userSelect: "none",
+          }}
+          onMouseEnter={e => {
+            if (!gpsLoading) {
+              e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
+              e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.7)';
+              e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.4)';
+            }
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+            e.currentTarget.style.boxShadow = '0 10px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2)';
+          }}
+        >
+          <div style={{
+            width: '24px', height: '24px', borderRadius: '50%',
+            background: 'rgba(56, 189, 248, 0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <TargetCrosshairIcon loading={gpsLoading} />
+          </div>
+          <span>{gpsLoading ? "Locking GPS..." : "Live Location"}</span>
+        </button>
+      )}
 
       {/* Warning Banner */}
-      <WarningBanner message={warningMessage} onClose={() => setWarningMessage(null)} />
+      {!readOnly && <WarningBanner message={warningMessage} onClose={() => setWarningMessage(null)} />}
 
       {/* Instruction banner */}
-      <InstructionBanner visible={showInstruction && !analysisLocation && !warningMessage} />
+      {!readOnly && <InstructionBanner visible={showInstruction && !analysisLocation && !warningMessage} />}
 
       {/* Main Map */}
       <Map
@@ -434,8 +450,8 @@ export default function MapComponent({
         }}
         style={{ width: "100%", height: "100%" }}
         mapStyle={`https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`}
-        onClick={handleMapTap}
-        cursor={analysisLocation ? 'default' : 'crosshair'}
+        onClick={readOnly ? undefined : handleMapTap}
+        cursor={readOnly ? 'default' : (analysisLocation ? 'default' : 'crosshair')}
       >
         <NavigationControl position="top-right" style={{ marginTop: '64px' }} />
         <FullscreenControl position="top-right" style={{ marginTop: '64px' }} />
@@ -457,7 +473,7 @@ export default function MapComponent({
             anchor="bottom"
           >
             <div style={{
-              background: '#1F8A70',
+              background: m.color || '#1F8A70',
               width: '20px',
               height: '20px',
               borderRadius: '50%',
@@ -479,7 +495,7 @@ export default function MapComponent({
       </Map>
 
       {/* Tracking panel */}
-      {analysisLocation && (
+      {analysisLocation && !readOnly && (
         <TrackingPanel
           location={analysisLocation}
           onClear={() => setShowConfirmModal(true)}
@@ -487,7 +503,7 @@ export default function MapComponent({
       )}
 
       {/* Confirm modal */}
-      {showConfirmModal && (
+      {showConfirmModal && !readOnly && (
         <ConfirmModal
           onConfirm={handleConfirmClear}
           onCancel={() => setShowConfirmModal(false)}

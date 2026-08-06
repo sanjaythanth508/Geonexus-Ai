@@ -52,14 +52,14 @@ export async function predictSite({ latitude, longitude, industryType }) {
     industry_type: industryType,
   });
   return res.data;
-  // Shape (matches your AnalysisRun serializer):
-  // {
-  //   id, latitude, longitude, industry_type, district,
-  //   nearest_highway_ref, nearest_river_name,
-  //   highway_corridor_bonus, river_reliability_bonus,
-  //   mcda_base_score, mcda_final_suitability_score,
-  //   lightgbm_predicted_label, lightgbm_probabilities: {label: prob},
-  //   criteria_breakdown: {criterion: {raw, score_100, weight}},
-  //   created_at
-  // }
+}
+
+export async function findSuggestion({ latitude, longitude, industryType, currentScore }) {
+  const res = await apiClient.post("analysis/find-suggestion/", {
+    latitude,
+    longitude,
+    industry_type: industryType,
+    current_score: currentScore,
+  });
+  return res.data.suggestion;
 }

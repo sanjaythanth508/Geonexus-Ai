@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getUserProfile, updateUserProfile } from '../api/auth';
+import { getUserProfile, updateUserProfile, uploadAvatar } from '../api/auth';
 import { Link } from 'react-router-dom';
 
 /* ═══════════════════════════════════════════════
@@ -33,6 +33,7 @@ export default function Profile() {
   const [isEditing, setIsEditing]     = useState(false);
   const [loading, setLoading]         = useState(true);
   const [saving, setSaving]           = useState(false);
+  const [uploading, setUploading]     = useState(false);
   const [message, setMessage]         = useState({ type: '', text: '' });
 
   // Form State
@@ -46,6 +47,77 @@ export default function Profile() {
   const [location, setLocation]       = useState('');
   const [bio, setBio]                 = useState('');
   const [avatarUrl, setAvatarUrl]     = useState('');
+
+  // Validation States
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const validateField = (name, value) => {
+    let errs = { ...validationErrors };
+    if (name === 'fullName') {
+      if (!value) errs.fullName = 'Full Display Name is required';
+      else if (value.length < 2) errs.fullName = 'Full Display Name must be at least 2 characters';
+      else if (!/^[a-zA-Z\s\-\']+$/.test(value)) errs.fullName = 'Full name can only contain letters, spaces, hyphens, and apostrophes';
+      else delete errs.fullName;
+    }
+    if (name === 'email') {
+      if (!value) errs.email = 'Email Address is required';
+      else if (!/^[\w\.\+\-]+\@[\w\.\-]+\.[\w]{2,}$/.test(value)) errs.email = 'Invalid email address format';
+      else delete errs.email;
+    }
+    if (name === 'phone') {
+      if (value && !/^\+?[0-9\s\-()]{7,20}$/.test(value)) errs.phone = 'Invalid phone number format (7 to 20 digits/symbols)';
+      else delete errs.phone;
+    }
+    if (name === 'avatarUrl') {
+      if (value && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(value)) errs.avatarUrl = 'Invalid avatar URL (must start with http:// or https://)';
+      else delete errs.avatarUrl;
+    }
+    setValidationErrors(errs);
+  };
+
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Unsupported file type. Select a JPG, PNG, GIF, or WEBP image.' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'File size exceeds maximum limit of 5MB.' });
+      return;
+    }
+
+    setUploading(true);
+    setMessage({ type: '', text: '' });
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await uploadAvatar(formData);
+      setAvatarUrl(res.data.avatar_url);
+      setMessage({ type: 'success', text: 'Avatar uploaded successfully!' });
+      if (profileData) {
+        const updated = {
+          ...profileData,
+          profile: {
+            ...profileData.profile,
+            avatar_url: res.data.avatar_url
+          }
+        };
+        setProfileData(updated);
+        updateUserState(updated);
+      }
+    } catch (err) {
+      console.error("Avatar upload error:", err);
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to upload avatar file.' });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -97,6 +169,21 @@ export default function Profile() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    // Validate all fields
+    validateField('fullName', fullName);
+    validateField('email', email);
+    validateField('phone', phone);
+    validateField('avatarUrl', avatarUrl);
+
+    const hasErrors = !fullName || !email || 
+      validationErrors.fullName || validationErrors.email || validationErrors.phone || validationErrors.avatarUrl;
+
+    if (hasErrors) {
+      setMessage({ type: 'error', text: 'Please correct all validation errors before saving.' });
+      return;
+    }
+
     setSaving(true);
     setMessage({ type: '', text: '' });
 
@@ -150,12 +237,12 @@ export default function Profile() {
         borderBottom: '1px solid var(--border-subtle)',
         position: 'sticky', top: 0, zIndex: 100,
       }}>
-        <Link to="/dashboard" style={{
+        <Link to="/home" style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
           color: 'var(--cyan)', textDecoration: 'none', fontWeight: '700', fontSize: '14px',
           transition: 'transform 0.2s',
         }}>
-          <ArrowLeftIcon /> Back to Control Desk
+          <ArrowLeftIcon /> Back to Home
         </Link>
         <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px' }}>
           User <span className="gradient-text">Profile</span>
@@ -221,25 +308,39 @@ export default function Profile() {
                 </div>
 
                 {isEditing && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const url = prompt('Enter Avatar Image URL:', avatarUrl);
-                      if (url !== null) setAvatarUrl(url);
-                    }}
-                    style={{
-                      position: 'absolute', bottom: '4px', right: '4px',
-                      width: '32px', height: '32px', borderRadius: '50%',
-                      background: 'var(--cyan)', border: 'none', color: '#000',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
-                    }}
-                    title="Change Photo URL"
-                  >
-                    <CameraIcon />
-                  </button>
+                  <>
+                    <label
+                      htmlFor="avatar-upload-input"
+                      style={{
+                        position: 'absolute', bottom: '4px', right: '4px',
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        background: 'var(--cyan)', color: '#000',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+                        transition: 'transform 0.2s',
+                      }}
+                      title="Upload Photo File"
+                      className="hover-scale"
+                    >
+                      {uploading ? <LoadSpinner /> : <CameraIcon />}
+                    </label>
+                    <input
+                      id="avatar-upload-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      disabled={uploading}
+                      style={{ display: 'none' }}
+                    />
+                  </>
                 )}
               </div>
+
+              {validationErrors.avatarUrl && (
+                <span style={{ fontSize: '11px', color: '#EF4444', display: 'block', marginTop: '-12px', marginBottom: '16px' }}>
+                  {validationErrors.avatarUrl}
+                </span>
+              )}
 
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: '800', marginBottom: '4px' }}>
                 {fullName || profileData?.username}
@@ -315,12 +416,18 @@ export default function Profile() {
                       <input
                         type="text"
                         value={fullName}
-                        onChange={e => setFullName(e.target.value)}
+                        onChange={e => {
+                          setFullName(e.target.value);
+                          validateField('fullName', e.target.value);
+                        }}
                         className="input-field"
                         style={{ paddingLeft: '40px' }}
                         disabled={!isEditing}
                       />
                     </div>
+                    {validationErrors.fullName && (
+                      <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.fullName}</span>
+                    )}
                   </div>
 
                   <div>
@@ -330,12 +437,18 @@ export default function Profile() {
                       <input
                         type="email"
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={e => {
+                          setEmail(e.target.value);
+                          validateField('email', e.target.value);
+                        }}
                         className="input-field"
                         style={{ paddingLeft: '40px' }}
                         disabled={!isEditing}
                       />
                     </div>
+                    {validationErrors.email && (
+                      <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.email}</span>
+                    )}
                   </div>
                 </div>
 
@@ -348,12 +461,18 @@ export default function Profile() {
                         type="text"
                         placeholder="Not provided"
                         value={phone}
-                        onChange={e => setPhone(e.target.value)}
+                        onChange={e => {
+                          setPhone(e.target.value);
+                          validateField('phone', e.target.value);
+                        }}
                         className="input-field"
                         style={{ paddingLeft: '40px' }}
                         disabled={!isEditing}
                       />
                     </div>
+                    {validationErrors.phone && (
+                      <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.phone}</span>
+                    )}
                   </div>
 
                   <div>

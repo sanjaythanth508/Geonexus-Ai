@@ -181,7 +181,7 @@ export default function Login() {
     setError('');
     try {
       await loginUser(username, password);
-      navigate('/dashboard');
+      navigate('/home');
     } catch {
       setError('Invalid username or password. Please try again.');
       setShakeKey(k => k + 1);
@@ -202,7 +202,7 @@ export default function Login() {
         // Redirect to registration page with Google payload pre-populated
         navigate('/register', { state: { googleInfo: data.google_info } });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/home', { replace: true });
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Google authentication failed.');

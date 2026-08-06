@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { register, loginWithGoogle } from '../api/auth';
+import { register, loginWithGoogle, sendOTP, verifyOTP } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+
 
 /* ═══════════════════════════════════════════════
    PARTICLES BACKGROUND
@@ -189,7 +190,17 @@ export default function Register() {
   const [showPass, setShowPass] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
   const [step,     setStep]     = useState(0);
-  const [formTab,  setFormTab]  = useState(1); // Step 1: Core, Step 2: Professional
+
+  // OTP Verification States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpMessage, setOtpMessage] = useState({ type: '', text: '' });
+  const [emailForOtp, setEmailForOtp] = useState('');
+
+  // Field Validation States
+  const [validationErrors, setValidationErrors] = useState({});
 
   const { loginWithTokens } = useAuth();
   const navigate = useNavigate();
@@ -204,6 +215,93 @@ export default function Register() {
     const t3 = setTimeout(() => setStep(3), 480);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
+
+  const validateField = (name, value) => {
+    let errs = { ...validationErrors };
+    if (name === 'fullName') {
+      if (!value) errs.fullName = 'Full Name is required';
+      else if (value.length < 2) errs.fullName = 'Full Name must be at least 2 characters';
+      else if (!/^[a-zA-Z\s\-\']+$/.test(value)) errs.fullName = 'Full name can only contain letters, spaces, hyphens, and apostrophes';
+      else delete errs.fullName;
+    }
+    if (name === 'username') {
+      if (!value) errs.username = 'Username is required';
+      else if (value.length < 3) errs.username = 'Username must be at least 3 characters';
+      else if (!/^[a-zA-Z0-9_\-]+$/.test(value)) errs.username = 'Username can only contain alphanumeric characters, underscores, and hyphens';
+      else delete errs.username;
+    }
+    if (name === 'email') {
+      if (!value) errs.email = 'Email is required';
+      else if (!/^[\w\.\+\-]+\@[\w\.\-]+\.[\w]{2,}$/.test(value)) errs.email = 'Invalid email address format';
+      else delete errs.email;
+    }
+    if (name === 'password') {
+      if (!value) errs.password = 'Password is required';
+      else if (value.length < 8) errs.password = 'Password must be at least 8 characters';
+      else if (!/[A-Z]/.test(value)) errs.password = 'Password must contain at least one uppercase letter';
+      else if (!/[0-9]/.test(value)) errs.password = 'Password must contain at least one digit';
+      else if (!/[^A-Za-z0-9]/.test(value)) errs.password = 'Password must contain at least one special character';
+      else delete errs.password;
+    }
+    if (name === 'phone') {
+      if (value && !/^\+?[0-9\s\-()]{7,20}$/.test(value)) errs.phone = 'Invalid phone format (7 to 20 digits/symbols)';
+      else delete errs.phone;
+    }
+    setValidationErrors(errs);
+  };
+
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setEmail(val);
+    validateField('email', val);
+    if (val !== emailForOtp) {
+      setOtpSent(false);
+      setOtpVerified(false);
+      setOtpCode('');
+      setOtpMessage({ type: '', text: '' });
+    }
+  };
+
+  const handleSendOTP = async () => {
+    if (!email) {
+      setOtpMessage({ type: 'error', text: 'Email is required' });
+      return;
+    }
+    if (validationErrors.email) {
+      setOtpMessage({ type: 'error', text: validationErrors.email });
+      return;
+    }
+    setOtpLoading(true);
+    setOtpMessage({ type: '', text: '' });
+    try {
+      await sendOTP(email);
+      setOtpSent(true);
+      setEmailForOtp(email);
+      setOtpMessage({ type: 'success', text: 'Verification code sent to your email.' });
+    } catch (err) {
+      setOtpMessage({ type: 'error', text: err.response?.data?.error || 'Failed to send verification code.' });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      setOtpMessage({ type: 'error', text: 'Please enter a 6-digit code.' });
+      return;
+    }
+    setOtpLoading(true);
+    setOtpMessage({ type: '', text: '' });
+    try {
+      await verifyOTP(email, otpCode);
+      setOtpVerified(true);
+      setOtpMessage({ type: 'success', text: 'Email verified successfully!' });
+    } catch (err) {
+      setOtpMessage({ type: 'error', text: err.response?.data?.error || 'Invalid or expired code.' });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const handleRipple = useCallback((e) => {
     const btn = btnRef.current;
@@ -224,6 +322,30 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Run validations
+    validateField('fullName', fullName);
+    validateField('username', username);
+    validateField('email', email);
+    if (!isGoogleMode) validateField('password', password);
+    validateField('phone', phone);
+
+    const hasErrors = !fullName || !username || !email || (!isGoogleMode && !password) ||
+      validationErrors.fullName || validationErrors.username || validationErrors.email ||
+      (!isGoogleMode && validationErrors.password) || validationErrors.phone;
+
+    if (hasErrors) {
+      setError('Please correct all validation errors before submitting.');
+      setShakeKey(k => k + 1);
+      return;
+    }
+
+    if (!isGoogleMode && !otpVerified) {
+      setError('Please send and verify the code sent to your email.');
+      setShakeKey(k => k + 1);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -244,7 +366,7 @@ export default function Register() {
       const res = await register(payload);
       if (res.data?.access) {
         loginWithTokens(res.data, fullName || username);
-        navigate('/dashboard');
+        navigate('/home');
       } else {
         navigate('/login');
       }
@@ -255,6 +377,7 @@ export default function Register() {
       setLoading(false);
     }
   };
+
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
@@ -268,7 +391,7 @@ export default function Register() {
         // Redirect to finish registration with prefilled Google info
         navigate('/register', { state: { googleInfo: data.google_info } });
       } else {
-        navigate('/dashboard');
+        navigate('/home');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Google Authentication failed.');
@@ -403,36 +526,6 @@ export default function Register() {
 
             <div style={{ padding: 'clamp(20px,4vw,30px)' }}>
 
-              {/* Multi-step tab indicators */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                <button
-                  type="button"
-                  onClick={() => setFormTab(1)}
-                  style={{
-                    flex: 1, padding: '8px 12px', borderRadius: 'var(--r-sm)',
-                    background: formTab === 1 ? 'rgba(34,211,238,0.12)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${formTab === 1 ? 'var(--cyan)' : 'var(--border-subtle)'}`,
-                    color: formTab === 1 ? 'var(--cyan)' : 'var(--text-muted)',
-                    fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                >
-                  1. Account Info
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormTab(2)}
-                  style={{
-                    flex: 1, padding: '8px 12px', borderRadius: 'var(--r-sm)',
-                    background: formTab === 2 ? 'rgba(139,92,246,0.12)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${formTab === 2 ? 'var(--purple)' : 'var(--border-subtle)'}`,
-                    color: formTab === 2 ? 'var(--purple)' : 'var(--text-muted)',
-                    fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                >
-                  2. Organization & Details
-                </button>
-              </div>
-
               {error && (
                 <div className="anim-fadeDown" style={{
                   display: 'flex', alignItems: 'flex-start', gap: '10px',
@@ -447,8 +540,84 @@ export default function Register() {
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-                {formTab === 1 && (
-                  <div className="anim-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Email Address</label>
+                  <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
+                        <MailIcon />
+                      </span>
+                      <input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={handleEmailChange}
+                        className="input-field"
+                        style={{ paddingLeft: '40px' }}
+                        required
+                        readOnly={isGoogleMode || otpVerified}
+                      />
+                    </div>
+                    {!isGoogleMode && !otpVerified && (
+                      <button
+                        type="button"
+                        disabled={otpLoading || !email || !!validationErrors.email}
+                        onClick={handleSendOTP}
+                        className="btn-ghost"
+                        style={{ padding: '0 16px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                      >
+                        {otpLoading ? 'Sending...' : otpSent ? 'Resend' : 'Send Code'}
+                      </button>
+                    )}
+                  </div>
+                  {validationErrors.email && (
+                    <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.email}</span>
+                  )}
+                  
+                  {!isGoogleMode && otpSent && !otpVerified && (
+                    <div className="anim-fadeDown" style={{
+                      padding: '14px', borderRadius: 'var(--r-md)',
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)',
+                      marginTop: '8px'
+                    }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Enter 6-Digit Code</label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="text"
+                          maxLength="6"
+                          placeholder="123456"
+                          value={otpCode}
+                          onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                          className="input-field"
+                          style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '16px', fontWeight: '700', flex: 1 }}
+                        />
+                        <button
+                          type="button"
+                          disabled={otpLoading || otpCode.length !== 6}
+                          onClick={handleVerifyOTP}
+                          className="btn-primary"
+                          style={{ padding: '0 20px', fontSize: '12px' }}
+                        >
+                          {otpLoading ? 'Verifying...' : 'Verify'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {otpMessage.text && (
+                    <div style={{
+                      fontSize: '12px',
+                      color: otpMessage.type === 'success' ? '#10B981' : '#EF4444',
+                      marginTop: '6px',
+                      fontWeight: '600'
+                    }}>
+                      {otpMessage.type === 'success' ? '✓ ' : '✗ '}{otpMessage.text}
+                    </div>
+                  )}
+                </div>
+
+                {(isGoogleMode || otpVerified) && (
+                  <div className="anim-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '6px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Full Name</label>
                       <div style={{ position: 'relative' }}>
@@ -459,12 +628,18 @@ export default function Register() {
                           type="text"
                           placeholder="John Doe"
                           value={fullName}
-                          onChange={e => setFullName(e.target.value)}
+                          onChange={e => {
+                            setFullName(e.target.value);
+                            validateField('fullName', e.target.value);
+                          }}
                           className="input-field"
                           style={{ paddingLeft: '40px' }}
                           required
                         />
                       </div>
+                      {validationErrors.fullName && (
+                        <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.fullName}</span>
+                      )}
                     </div>
 
                     <div>
@@ -477,31 +652,18 @@ export default function Register() {
                           type="text"
                           placeholder="Choose username"
                           value={username}
-                          onChange={e => setUsername(e.target.value)}
+                          onChange={e => {
+                            setUsername(e.target.value);
+                            validateField('username', e.target.value);
+                          }}
                           className="input-field"
                           style={{ paddingLeft: '40px' }}
                           required
                         />
                       </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Email Address</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                          <MailIcon />
-                        </span>
-                        <input
-                          type="email"
-                          placeholder="your@email.com"
-                          value={email}
-                          onChange={e => setEmail(e.target.value)}
-                          className="input-field"
-                          style={{ paddingLeft: '40px' }}
-                          required
-                          readOnly={isGoogleMode}
-                        />
-                      </div>
+                      {validationErrors.username && (
+                        <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.username}</span>
+                      )}
                     </div>
 
                     {!isGoogleMode && (
@@ -515,7 +677,10 @@ export default function Register() {
                             type={showPass ? 'text' : 'password'}
                             placeholder="Create security key"
                             value={password}
-                            onChange={e => setPassword(e.target.value)}
+                            onChange={e => {
+                              setPassword(e.target.value);
+                              validateField('password', e.target.value);
+                            }}
                             className="input-field"
                             style={{ paddingLeft: '40px', paddingRight: '44px' }}
                             required={!isGoogleMode}
@@ -528,6 +693,9 @@ export default function Register() {
                             <EyeIcon open={showPass} />
                           </button>
                         </div>
+                        {validationErrors.password && (
+                          <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.password}</span>
+                        )}
 
                         {password && (
                           <div className="anim-fadeUp" style={{ marginTop: '8px' }}>
@@ -547,119 +715,15 @@ export default function Register() {
                     )}
 
                     <button
-                      type="button"
-                      className="btn-ghost"
-                      onClick={() => setFormTab(2)}
-                      style={{ marginTop: '8px', justifyContent: 'center' }}
+                      ref={btnRef}
+                      type="submit"
+                      disabled={loading}
+                      className="btn-primary"
+                      onClick={handleRipple}
+                      style={{ marginTop: '10px', padding: '13px', fontSize: '14px', width: '100%' }}
                     >
-                      Next: Profile Details →
+                      {loading ? <><LoadSpinner /> Creating Account…</> : <><UserPlusIcon /> Complete Sign-Up</>}
                     </button>
-                  </div>
-                )}
-
-                {formTab === 2 && (
-                  <div className="anim-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Phone Number</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                          <PhoneIcon />
-                        </span>
-                        <input
-                          type="tel"
-                          placeholder="+1 (555) 000-0000"
-                          value={phone}
-                          onChange={e => setPhone(e.target.value)}
-                          className="input-field"
-                          style={{ paddingLeft: '40px' }}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Organization</label>
-                        <div style={{ position: 'relative' }}>
-                          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                            <BuildingIcon />
-                          </span>
-                          <input
-                            type="text"
-                            placeholder="Company / Univ"
-                            value={organization}
-                            onChange={e => setOrganization(e.target.value)}
-                            className="input-field"
-                            style={{ paddingLeft: '40px' }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Job Title</label>
-                        <div style={{ position: 'relative' }}>
-                          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                            <BriefcaseIcon />
-                          </span>
-                          <input
-                            type="text"
-                            placeholder="GIS Analyst"
-                            value={jobTitle}
-                            onChange={e => setJobTitle(e.target.value)}
-                            className="input-field"
-                            style={{ paddingLeft: '40px' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Location / Region</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                          <MapPinIcon />
-                        </span>
-                        <input
-                          type="text"
-                          placeholder="San Francisco, CA"
-                          value={userLocation}
-                          onChange={e => setUserLocation(e.target.value)}
-                          className="input-field"
-                          style={{ paddingLeft: '40px' }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Short Bio</label>
-                      <textarea
-                        rows="2"
-                        placeholder="Brief summary of your geospatial focus..."
-                        value={bio}
-                        onChange={e => setBio(e.target.value)}
-                        className="input-field"
-                        style={{ resize: 'none' }}
-                      />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
-                      <button
-                        type="button"
-                        className="btn-ghost"
-                        onClick={() => setFormTab(1)}
-                        style={{ flex: 1, justifyContent: 'center' }}
-                      >
-                        ← Back
-                      </button>
-                      <button
-                        ref={btnRef}
-                        type="submit"
-                        disabled={loading}
-                        className="btn-primary"
-                        onClick={handleRipple}
-                        style={{ flex: 2, padding: '13px', fontSize: '14px' }}
-                      >
-                        {loading ? <><LoadSpinner /> Submitting…</> : <><UserPlusIcon /> Complete Sign-Up</>}
-                      </button>
-                    </div>
                   </div>
                 )}
 

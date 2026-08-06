@@ -10,7 +10,7 @@ if os.path.exists(GDAL_LIBRARY_PATH):
     os.environ['GDAL_LIBRARY_PATH'] = GDAL_LIBRARY_PATH
     os.environ['PROJ_LIB'] = r'C:\Program Files\QGIS 3.44.10\share\proj'
     try:
-        os.add_dll_directory(r'C:\Program Files\QGIS 3.44.10\bin')
+        gdal_dll_dir = os.add_dll_directory(r'C:\Program Files\QGIS 3.44.10\bin')
     except Exception:
         pass
 
@@ -104,6 +104,14 @@ DATABASES = {
 }
 # Override engine to use standard PostgreSQL driver (not PostGIS)
 DATABASES['default']['ENGINE'] = 'django.db.backends.postgresql'
+DATABASES['default']['CONN_MAX_AGE'] = 0  # Close connections after each request to avoid stale/idle socket EOFs
+DATABASES['default']['OPTIONS'] = {
+    'connect_timeout': 5,
+    'keepalives': 1,
+    'keepalives_idle': 30,
+    'keepalives_interval': 10,
+    'keepalives_count': 5,
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -178,3 +186,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",
     "http://127.0.0.1:5174",
 ]
+
+# --- Email Settings --------------------------------------------------
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend').strip()
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com').strip()
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+
+# Strips spaces and supports fallback in case keys have spaces around them in the env file
+EMAIL_HOST_USER = (os.environ.get('EMAIL_HOST_USER') or os.environ.get('EMAIL_HOST_USER ') or env('EMAIL_HOST_USER', default='')).strip()
+EMAIL_HOST_PASSWORD = (os.environ.get('EMAIL_HOST_PASSWORD') or os.environ.get('EMAIL_HOST_PASSWORD ') or env('EMAIL_HOST_PASSWORD', default='')).strip()
+DEFAULT_FROM_EMAIL = (os.environ.get('DEFAULT_FROM_EMAIL') or os.environ.get('DEFAULT_FROM_EMAIL ') or env('DEFAULT_FROM_EMAIL', default='GeoNexus AI <noreply@geonexus.ai>')).strip()

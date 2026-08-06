@@ -2,10 +2,16 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import Profile from './pages/Profile';
 import PredictionReport from './pages/PredictionReport';
 import GeoChat from './pages/GeoChat';
+import NodesList from './pages/NodesList';
+import NodeDetail from './pages/NodeDetail';
+import AnalysisMap from './pages/AnalysisMap';
+import AnalysisRun from './pages/AnalysisRun';
+import SuggestionReport from './pages/SuggestionReport';
+import SuggestionMap from './pages/SuggestionMap';
 
 /* ── Premium Loading Screen ── */
 function LoadingScreen() {
@@ -65,19 +71,30 @@ function PrivateRoute({ children }) {
 function HomeRedirect() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  return <Navigate to={user ? '/dashboard' : '/login'} />;
+  return <Navigate to={user ? '/home' : '/login'} />;
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login"     element={<Login />} />
-      <Route path="/register"  element={<Register />} />
-      <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-      <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
-      <Route path="/report"    element={<PrivateRoute><PredictionReport /></PrivateRoute>} />
-      <Route path="/chat"      element={<PrivateRoute><GeoChat /></PrivateRoute>} />
-      <Route path="/"          element={<HomeRedirect />} />
+      <Route path="/login"         element={<Login />} />
+      <Route path="/register"      element={<Register />} />
+      {/* New home page - post login landing */}
+      <Route path="/home"          element={<PrivateRoute><Home /></PrivateRoute>} />
+      {/* Redirect legacy /dashboard to /home */}
+      <Route path="/dashboard"     element={<Navigate to="/home" replace />} />
+      <Route path="/profile"       element={<PrivateRoute><Profile /></PrivateRoute>} />
+      <Route path="/report"        element={<PrivateRoute><PredictionReport /></PrivateRoute>} />
+      <Route path="/chat"          element={<PrivateRoute><GeoChat /></PrivateRoute>} />
+      {/* Deployed nodes */}
+      <Route path="/nodes"         element={<PrivateRoute><NodesList /></PrivateRoute>} />
+      <Route path="/nodes/:id"     element={<PrivateRoute><NodeDetail /></PrivateRoute>} />
+      {/* New analysis flow */}
+      <Route path="/analysis"      element={<PrivateRoute><AnalysisMap /></PrivateRoute>} />
+      <Route path="/analysis/run"  element={<PrivateRoute><AnalysisRun /></PrivateRoute>} />
+      <Route path="/analysis/suggestion" element={<PrivateRoute><SuggestionReport /></PrivateRoute>} />
+      <Route path="/analysis/suggestion-map" element={<PrivateRoute><SuggestionMap /></PrivateRoute>} />
+      <Route path="/"              element={<HomeRedirect />} />
     </Routes>
   );
 }

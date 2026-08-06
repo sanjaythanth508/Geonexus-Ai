@@ -32,6 +32,7 @@ class AnalysisRun(models.Model):
     lightgbm_predicted_label = models.CharField(max_length=64, default="")
     lightgbm_probabilities = models.JSONField(default=dict)               # {label: probability}
     criteria_breakdown = models.JSONField(default=dict)
+    better_site_suggestion = models.JSONField(default=dict, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,0 +1,247 @@
+import { useState } from 'react';
+
+const CloseIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const MapIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+    <line x1="8" y1="2" x2="8" y2="18" />
+    <line x1="16" y1="6" x2="16" y2="22" />
+  </svg>
+);
+
+function getHaversineDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(1);
+}
+
+export default function LocationCompareModal({ isOpen, onClose, selectedData, suggestionData, onViewMap }) {
+  if (!isOpen || !selectedData || !suggestionData) return null;
+
+  const selScore = Number(selectedData.mcda_final_suitability_score || selectedData.overall_score || 0);
+  const sugScore = Number(suggestionData.mcda_final_suitability_score || 0);
+  const scoreDiff = (sugScore - selScore).toFixed(1);
+
+  const selLat = selectedData.latitude || selectedData.lat;
+  const selLon = selectedData.longitude || selectedData.lon;
+  const sugLat = suggestionData.latitude;
+  const sugLon = suggestionData.longitude;
+
+  const distanceKm = getHaversineDistance(selLat, selLon, sugLat, sugLon);
+
+  // Combine criteria keys
+  const selCriteria = selectedData.criteria_breakdown || {};
+  const sugCriteria = suggestionData.criteria_breakdown || {};
+  const allKeys = Array.from(new Set([...Object.keys(selCriteria), ...Object.keys(sugCriteria)]));
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(3, 7, 18, 0.85)', backdropFilter: 'blur(16px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 'clamp(16px, 4vw, 32px)', overflowY: 'auto'
+    }}>
+      <div style={{
+        maxWidth: '960px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+        background: 'rgba(11, 15, 25, 0.95)', border: '1px solid rgba(56, 189, 248, 0.3)',
+        borderRadius: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(56, 189, 248, 0.1)',
+        padding: 'clamp(24px, 4vw, 36px)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)',
+        position: 'relative'
+      }} className="anim-scaleUp">
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: '20px', right: '20px',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '50%', width: '36px', height: '36px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+        >
+          <CloseIcon />
+        </button>
+
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px',
+            borderRadius: '20px', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.25)',
+            fontSize: '11px', fontWeight: '800', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px'
+          }}>
+            ⚖️ Comparative Optimization Analysis
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '900', margin: 0 }}>
+            Selected Site vs. Optimized Nearby Site
+          </h2>
+          {distanceKm && (
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+              Nearby recommendation is located <b>{distanceKm} km</b> away within the 10-20km radius.
+            </p>
+          )}
+        </div>
+
+        {/* Score comparison cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr', gap: '16px', alignItems: 'center', marginBottom: '28px' }}>
+          {/* Selected location */}
+          <div style={{
+            background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)',
+            borderRadius: '18px', padding: '20px', textAlign: 'center'
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              📍 Selected Location
+            </span>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: '900', color: '#EF4444', margin: '8px 0 2px' }}>
+              {selScore.toFixed(1)}
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+              {selectedData.district || 'Gujarat'} ({selLat ? selLat.toFixed(3) : ''}°, {selLon ? selLon.toFixed(3) : ''}°)
+            </span>
+          </div>
+
+          {/* Gain badge */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: '12px', padding: '10px 8px', color: '#10B981', fontWeight: '800', fontSize: '13px'
+            }}>
+              +{scoreDiff} pts
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px' }}>Score Gain</div>
+            </div>
+          </div>
+
+          {/* Suggested location */}
+          <div style={{
+            background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.3)',
+            borderRadius: '18px', padding: '20px', textAlign: 'center'
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              💡 Optimized Suggestion
+            </span>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: '900', color: '#10B981', margin: '8px 0 2px' }}>
+              {sugScore.toFixed(1)}
+            </div>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+              {suggestionData.district || 'Gujarat'} ({sugLat ? sugLat.toFixed(3) : ''}°, {sugLon ? sugLon.toFixed(3) : ''}°)
+            </span>
+          </div>
+        </div>
+
+        {/* Infrastructure comparison */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '28px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
+              🛣️ Highway Link
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Selected:</span>
+              <span style={{ fontWeight: '700', color: '#38BDF8' }}>{selectedData.nearest_highway_ref || 'NH Corridor'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Suggested:</span>
+              <span style={{ fontWeight: '700', color: '#10B981' }}>{suggestionData.nearest_highway_ref || 'NH Corridor'}</span>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
+              🌊 Waterway Access
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Selected:</span>
+              <span style={{ fontWeight: '700', color: '#A855F7' }}>{selectedData.nearest_river_name || 'Regional River'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Suggested:</span>
+              <span style={{ fontWeight: '700', color: '#10B981' }}>{suggestionData.nearest_river_name || 'Regional River'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Criteria Breakdown Side-by-Side Table */}
+        <div style={{ marginBottom: '28px' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: '800', marginBottom: '14px' }}>
+            Metrics Comparison Breakdown
+          </h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
+                  <th style={{ padding: '10px 14px', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '11px' }}>Evaluation Metric</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'right', color: '#EF4444', fontSize: '11px' }}>Selected Score</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'right', color: '#10B981', fontSize: '11px' }}>Suggested Score</th>
+                  <th style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--cyan)', fontSize: '11px' }}>Delta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allKeys.map((key, idx) => {
+                  const selVal = selCriteria[key]?.score_100 ?? 0;
+                  const sugVal = sugCriteria[key]?.score_100 ?? 0;
+                  const diff = sugVal - selVal;
+
+                  return (
+                    <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                      <td style={{ padding: '10px 14px', textTransform: 'capitalize', fontWeight: '600' }}>
+                        {key.replace(/_/g, ' ')}
+                      </td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#EF4444' }}>
+                        {selVal.toFixed(1)}
+                      </td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#10B981' }}>
+                        {sugVal.toFixed(1)}
+                      </td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '800', color: diff >= 0 ? '#10B981' : '#F43F5E' }}>
+                        {diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Modal Action Footer */}
+        <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          {onViewMap && (
+            <button
+              onClick={() => { onClose(); onViewMap(); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 22px',
+                background: 'var(--grad-btn)', border: 'none', borderRadius: '12px',
+                color: '#fff', fontWeight: '800', fontSize: '13.5px', cursor: 'pointer'
+              }}
+            >
+              <MapIcon /> View Both on Map
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            style={{
+              padding: '11px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer'
+            }}
+          >
+            Close Comparison
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}

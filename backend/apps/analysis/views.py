@@ -96,6 +96,25 @@ def predict_site(request):
     return Response(AnalysisRunSerializer(run).data, status=status.HTTP_201_CREATED)
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def find_suggestion(request):
+    latitude = float(request.data.get("latitude", 0))
+    longitude = float(request.data.get("longitude", 0))
+    industry_type = str(request.data.get("industry_type", ""))
+    current_score = float(request.data.get("current_score", 0))
+
+    from apps.analysis.services.scorer import find_better_nearby_location_ondemand
+    suggestion = find_better_nearby_location_ondemand(
+        latitude=latitude,
+        longitude=longitude,
+        industry_type=industry_type,
+        current_score=current_score
+    )
+
+    return Response({"suggestion": suggestion}, status=status.HTTP_200_OK)
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def list_industry_types(request):
