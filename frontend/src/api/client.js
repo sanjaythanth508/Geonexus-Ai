@@ -17,7 +17,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("access_token");
 
     if (token) {
-      config.headers.set("Authorization", `Bearer ${token}`);
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -35,6 +35,8 @@ api.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
+      !originalRequest.url?.includes('users/token/') &&
+      !originalRequest.url?.includes('users/register/') &&
       !originalRequest._retry
     ) {
       originalRequest._retry = true;
@@ -52,13 +54,19 @@ api.interceptors.response.use(
 
           localStorage.setItem("access_token", res.data.access);
 
-          originalRequest.headers.set("Authorization", `Bearer ${res.data.access}`);
+          originalRequest.headers.Authorization = `Bearer ${res.data.access}`;
 
           return api(originalRequest);
         } catch (err) {
-          console.warn("Token refresh failed:", err);
+          console.warn("Token refresh failed, logging out:", err);
+          localStorage.clear();
+          window.location.href = '/login';
           return Promise.reject(err);
         }
+      } else {
+        console.warn("No refresh token found, logging out");
+        localStorage.clear();
+        window.location.href = '/login';
       }
     }
 

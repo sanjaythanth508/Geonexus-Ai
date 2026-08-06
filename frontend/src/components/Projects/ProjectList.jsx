@@ -1,3 +1,5 @@
+import api from '../../api/client';
+
 const CARD_COLORS = [
   { from: '#22D3EE', to: '#3B82F6' }, // cyan -> blue
   { from: '#A78BFA', to: '#F472B6' }, // purple -> pink
@@ -10,13 +12,57 @@ function getGradient(id, index) {
   return CARD_COLORS[(id || index || 0) % CARD_COLORS.length];
 }
 
-function ProjectCard({ project, index }) {
+function ProjectCard({ project, index, onSelect, onDelete }) {
   const colors = getGradient(project.id, index);
   const letter = (project.name || 'P').trim()[0].toUpperCase();
+
+  let displayDesc = project.description;
+  let scoreBadge = null;
+  let analysisData = project.analysis_data;
+
+  // Fallback for older projects where analysis data was stored as a JSON string inside description
+  if (!analysisData && project.description) {
+    try {
+      const parsed = JSON.parse(project.description);
+      analysisData = parsed.analysis || (parsed.mcda_final_suitability_score || parsed.final_suitability_score ? parsed : null);
+      if (analysisData) {
+        displayDesc = parsed.notes || "";
+      }
+    } catch (e) {
+      // Not JSON, description is treated as plain text
+    }
+  }
+
+  if (analysisData) {
+    const score = analysisData.mcda_final_suitability_score || analysisData.final_suitability_score;
+    const ind = analysisData.industry_type || analysisData.industry;
+    displayDesc = `${ind || 'Industry'} Siting Analysis` + (displayDesc ? ` - ${displayDesc}` : '');
+    if (score != null) {
+      scoreBadge = (
+        <span style={{
+          fontSize: '10.5px',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          background: 'rgba(34, 211, 238, 0.15)',
+          border: '1px solid rgba(34, 211, 238, 0.3)',
+          color: '#22d3ee',
+          fontWeight: '800',
+          marginLeft: '8px'
+        }}>
+          {Number(score).toFixed(1)}/100
+        </span>
+      );
+    }
+  }
+
+  const coordsLabel = (project.latitude != null && project.longitude != null)
+    ? `(${Number(project.latitude).toFixed(3)}°, ${Number(project.longitude).toFixed(3)}°)`
+    : null;
 
   return (
     <div
       className="anim-fadeUp"
+      onClick={onSelect}
       style={{
         display: 'flex', gap: '14px', alignItems: 'center',
         padding: '14px', borderRadius: 'var(--r-md)',
@@ -63,28 +109,62 @@ function ProjectCard({ project, index }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <h4 style={{
           fontSize: '13.5px', fontWeight: '700', color: 'var(--text-primary)',
-          marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          {project.name}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
+          {scoreBadge}
         </h4>
-        {project.description ? (
+        {coordsLabel && (
+          <div style={{ fontSize: '11px', color: 'var(--cyan)', fontWeight: '600', marginBottom: '2px' }}>
+            {coordsLabel}
+          </div>
+        )}
+        {displayDesc ? (
           <p style={{
             fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5,
             overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
           }}>
-            {project.description}
+            {displayDesc}
           </p>
         ) : (
           <p style={{ fontSize: '11.5px', color: 'var(--text-faint)', fontStyle: 'italic' }}>
-            No coordinates specified
+            No analysis data captured
           </p>
         )}
       </div>
 
-      {/* Chevron indicator */}
-      <div style={{ color: 'var(--text-faint)', flexShrink: 0 }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
+      {/* Delete Icon Button */}
+      <button
+        onClick={async (e) => {
+          e.stopPropagation();
+          if (window.confirm(`Delete project node "${project.name}"?`)) {
+            try {
+              await api.delete(`projects/${project.id}/`);
+              onDelete?.();
+            } catch {
+              alert("Failed to delete project node.");
+            }
+          }
+        }}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: 'rgba(239, 68, 68, 0.5)',
+          cursor: 'pointer',
+          padding: '6px',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s',
+          flexShrink: 0,
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+        onMouseLeave={e => e.currentTarget.style.color = 'rgba(239, 68, 68, 0.5)'}
+        title="Delete Node"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
     </div>
   );
 }
@@ -112,13 +192,19 @@ function EmptyNodes() {
   );
 }
 
-export default function ProjectList({ projects }) {
+export default function ProjectList({ projects, onSelectProject, onDeleteProject }) {
   if (!projects.length) return <EmptyNodes />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {projects.map((p, idx) => (
-        <ProjectCard key={p.id ?? idx} project={p} index={idx} />
+        <ProjectCard 
+          key={p.id ?? idx} 
+          project={p} 
+          index={idx} 
+          onSelect={() => onSelectProject?.(p)} 
+          onDelete={() => onDeleteProject?.(p.id)}
+        />
       ))}
     </div>
   );

@@ -28,6 +28,9 @@ class Project(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+    analysis_data = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

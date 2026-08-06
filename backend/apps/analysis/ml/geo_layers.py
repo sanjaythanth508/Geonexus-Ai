@@ -215,22 +215,30 @@ class GeoLayers:
     def _build_tree(gdf):
         if gdf is None or len(gdf) == 0:
             return None
-
-        points = []
-        for geom in gdf.geometry:
-            if geom is None or getattr(geom, "is_empty", False):
-                continue
-            try:
-                centroid = geom.centroid
-                if centroid is None or getattr(centroid, "is_empty", False):
+        try:
+            # Vectorized centroid calculation is orders of magnitude faster
+            valid_geoms = gdf.geometry[gdf.geometry.notna() & ~gdf.geometry.is_empty]
+            if len(valid_geoms) == 0:
+                return None
+            centroids = valid_geoms.centroid
+            points = np.column_stack((centroids.x, centroids.y))
+            return cKDTree(points)
+        except Exception as e:
+            print(f"[GeoNexus][WARN] Vectorized KDTree build failed ({e}) -- falling back to loop.")
+            points = []
+            for geom in gdf.geometry:
+                if geom is None or getattr(geom, "is_empty", False):
                     continue
-                points.append((centroid.x, centroid.y))
-            except Exception:
-                continue
-
-        if not points:
-            return None
-        return cKDTree(np.array(points))
+                try:
+                    centroid = geom.centroid
+                    if centroid is None or getattr(centroid, "is_empty", False):
+                        continue
+                    points.append((centroid.x, centroid.y))
+                except Exception:
+                    continue
+            if not points:
+                return None
+            return cKDTree(np.array(points))
 
     def _match_industry_type(self, keywords):
         """Ported from match_industry_type() in the notebook — matches on the

@@ -123,6 +123,35 @@ export default function PredictionReport() {
     });
   };
 
+  const handlePdfExport = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.post('reports/export-pdf/', {
+        latitude,
+        longitude,
+        industry_type,
+        score: scoreNum,
+        district,
+        classification: categoryLabel,
+        criteria_breakdown
+      }, { responseType: 'blob' });
+
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `GeoNexus_Audit_${district.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.warn("Server PDF API unavailable, building via client canvas:", err);
+      handleDownloadPdfFile();
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div style={{
       minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)',
@@ -143,7 +172,7 @@ export default function PredictionReport() {
         </Link>
 
         <button
-          onClick={handleDownloadPdfFile}
+          onClick={handlePdfExport}
           disabled={downloading}
           className="btn-primary"
           style={{ padding: '8px 22px', fontSize: '13.5px', gap: '8px', opacity: downloading ? 0.7 : 1 }}

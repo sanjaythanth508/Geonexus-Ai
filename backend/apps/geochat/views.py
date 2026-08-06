@@ -11,5 +11,5 @@ def geochat_view(request):
     history = request.data.get("history")  # pass back the list your frontend stored, or None for a new chat
     if not message:
         return Response({"error": "message is required"}, status=400)
-    answer, history = run_chat(message, history=history)
-    return Response({"answer": answer, "history": history})
+    answer, history, metadata = run_chat(message, history=history)
+    return Response({"answer": answer, "history": history, "metadata": metadata})

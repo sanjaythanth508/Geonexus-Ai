@@ -89,9 +89,18 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ── NEW: state for location selection and analysis results ──
+  const [theme, setTheme] = useState(() => localStorage.getItem('geonexus_theme') || 'dark');
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('geonexus_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   // Resize listener for responsive layout adjustments
   useEffect(() => {
@@ -121,6 +130,39 @@ export default function Dashboard() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleSelectProject = (project) => {
+    if (project.latitude != null && project.longitude != null) {
+      const loc = { lat: project.latitude, lon: project.longitude };
+      setSelectedLocation(loc);
+      
+      // Store in sessionStorage to persist state across reloads/components
+      sessionStorage.setItem("analysisLocation", JSON.stringify(loc));
+      
+      // If description contains a valid saved analysis JSON, restore it!
+      if (project.analysis_data) {
+        setAnalysisResult(project.analysis_data);
+        return;
+      }
+
+      // If description contains a valid saved analysis JSON, restore it!
+      if (project.description) {
+        try {
+          const parsed = JSON.parse(project.description);
+          const analysisData = parsed.analysis || (parsed.mcda_final_suitability_score || parsed.final_suitability_score ? parsed : null);
+          if (analysisData && typeof analysisData === 'object') {
+            setAnalysisResult(analysisData);
+            return;
+          }
+        } catch (e) {
+          // Plain description
+        }
+      }
+      
+      // Reset result panel if no saved analysis
+      setAnalysisResult(null);
+    }
   };
 
   // ── Convert projects to markers for the map ──
@@ -202,6 +244,27 @@ export default function Dashboard() {
 
         {/* Right: User Menu + Logout */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={toggleTheme}
+            className="btn-ghost"
+            style={{
+              padding: '6px 10px', borderRadius: 'var(--r-sm)',
+              color: 'var(--text-primary)', border: '1px solid var(--border-subtle)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {theme === 'dark' ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
+          </button>
+
           <button
             onClick={() => navigate('/chat')}
             className="btn-ghost"
@@ -303,12 +366,20 @@ export default function Dashboard() {
                   </button>
                 )}
               </div>
-              <ProjectForm onProjectCreated={fetchProjects} />
+              <ProjectForm 
+                onProjectCreated={fetchProjects} 
+                selectedLocation={selectedLocation} 
+                analysisResult={analysisResult} 
+              />
             </div>
 
             {/* Scrollable Project Cards */}
             <div style={{ flex: 1, padding: '16px 20px', overflowY: 'auto' }}>
-              <ProjectList projects={projects} />
+              <ProjectList 
+                projects={projects} 
+                onSelectProject={handleSelectProject} 
+                onDeleteProject={fetchProjects} 
+              />
             </div>
           </div>
         </aside>
@@ -379,7 +450,7 @@ export default function Dashboard() {
               location={selectedLocation}
               onResult={setAnalysisResult}
             />
-            <ResultsPanel result={analysisResult} />
+            <ResultsPanel result={analysisResult} onSave={fetchProjects} />
           </div>
         </div>
 

@@ -92,6 +92,36 @@
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme='light'] {
+  --bg-primary:         #F8FAFC;
+  --bg-secondary:       #FFFFFF;
+  --bg-surface:         #F1F5F9;
+  --bg-elevated:        #E2E8F0;
+  --bg-card:            #FFFFFF;
+  --bg-card-hover:      #F8FAFC;
+
+  --glass-bg:           rgba(255, 255, 255, 0.85);
+  --glass-bright:       rgba(255, 255, 255, 0.95);
+  --glass-border:       rgba(15, 23, 42, 0.08);
+  --glass-hover:        rgba(15, 23, 42, 0.04);
+
+  --text-primary:       #0F172A;
+  --text-secondary:     #475569;
+  --text-muted:         #64748B;
+  --text-faint:         #94A3B8;
+
+  --border-subtle:      rgba(15, 23, 42, 0.06);
+  --border-default:     rgba(15, 23, 42, 0.12);
+  --border-bright:      rgba(15, 23, 42, 0.20);
+  --border-accent:      rgba(2, 132, 199, 0.45);
+
+  --shadow-xs:          0 1px 3px rgba(15,23,42,0.08);
+  --shadow-sm:          0 4px 12px rgba(15,23,42,0.06);
+  --shadow-md:          0 10px 25px rgba(15,23,42,0.08);
+  --shadow-lg:          0 20px 45px rgba(15,23,42,0.10);
+  --shadow-card:        0 2px 12px rgba(15,23,42,0.05);
+}
+
 /* ══════════════════════════════════════════════════════
    RESET & BASE
 ══════════════════════════════════════════════════════ */

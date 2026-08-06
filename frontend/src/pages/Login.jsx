@@ -194,7 +194,8 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const data = await loginWithGoogle(credentialResponse.credential);
+      const res = await loginWithGoogle(credentialResponse.credential);
+      const data = res.data;
       loginWithTokens(data, data.user?.username || 'Google User');
       
       if (data.is_new_user) {

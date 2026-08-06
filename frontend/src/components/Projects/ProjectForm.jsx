@@ -80,13 +80,29 @@ function Spinner() {
   );
 }
 
-export default function ProjectForm({ onProjectCreated }) {
+export default function ProjectForm({ onProjectCreated, selectedLocation, analysisResult }) {
   const [name, setName]               = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading]         = useState(false);
   const [toast, setToast]             = useState(null);
   const [errToast, setErrToast]       = useState(null);
   const nameRef = useRef(null);
+
+  // Pre-fill fields when analysisResult or selectedLocation changes
+  useEffect(() => {
+    if (analysisResult) {
+      const dist = analysisResult.district || 'Gujarat';
+      const ind = analysisResult.industry_type || 'Industrial';
+      setName(`${dist} ${ind} Node`);
+      setDescription('');
+    } else if (selectedLocation) {
+      setName(`Site Node (${selectedLocation.lat.toFixed(3)}, ${selectedLocation.lon.toFixed(3)})`);
+      setDescription('');
+    } else {
+      setName('');
+      setDescription('');
+    }
+  }, [analysisResult, selectedLocation]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,13 +111,22 @@ export default function ProjectForm({ onProjectCreated }) {
 
     setLoading(true);
     try {
-      await api.post('projects/', { name: formattedName, description: description.trim() });
+      const payload = {
+        name: formattedName,
+        description: description.trim(),
+        analysis_data: analysisResult || null,
+      };
+      if (selectedLocation) {
+        payload.latitude = selectedLocation.lat;
+        payload.longitude = selectedLocation.lon;
+      }
+      await api.post('projects/', payload);
       setName('');
       setDescription('');
-      setToast(`Project "${formattedName}" registered!`);
+      setToast(`Project node "${formattedName}" deployed!`);
       onProjectCreated();
     } catch {
-      setErrToast("Server error. Failed to add project node.");
+      setErrToast("Server error. Failed to deploy project node.");
     } finally {
       setLoading(false);
     }
