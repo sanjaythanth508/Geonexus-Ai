@@ -31,25 +31,20 @@ Selecting a location for a new industrial facility — a factory, warehouse, or 
 
 ## Features
 
-### ✅ Currently Implemented
+### ✅ Key Features Implemented
 
 - **Multi-Criteria Suitability Scoring Engine** — a transparent, weighted MCDA (Multi-Criteria Decision Analysis) model scoring any location against 11 geospatial and demographic criteria (roads, railways, transport, water bodies, hospitals, population, building density, land use, protected areas, and natural-area risk).
-- **Highway Connectivity Intelligence** — doesn't just measure distance to the nearest road; identifies the nearest *named* highway and the real settlements it connects to nearby, weighted by population — so a highway leading toward a major industrial hub scores higher than an equally-close road to nowhere.
-- **Industry-Specific Weight Profiles** — Warehousing/Logistics, General Manufacturing, Chemical/Hazardous, IT/Electronics, and Food Processing each apply a different, purpose-built weighting to the same underlying data.
-- **LightGBM ML Surrogate Model** — trained on bootstrapped labels generated from the rule-based engine itself, blended with the transparent MCDA score to combine explainability with learned feature interactions.
-- **PostGIS-Powered Spatial Queries** — nearest-neighbor and intersection queries (`ST_Distance`, `ST_DWithin`, `ST_Intersects`, KNN `<->` operator) run directly in the database for speed and correctness at scale.
-- **Interactive Map Interface** — click-to-select site analysis on a MapLibre GL map, built on React + Vite + Tailwind CSS.
-- **REST API** — Django REST Framework backend exposing scoring, project, and (in progress) reporting endpoints.
-- **Risk Blocker Detection** — sites intersecting protected/conservation areas are explicitly flagged as regulatory blockers, not just penalized numerically.
-
-### 🚧 In Active Development
-
-- User authentication & project/site bookmarking (`users`, `api` apps scaffolded)
-- Automated PDF feasibility reports (`reports` app scaffolded)
-- Recommendation engine for proactive top-N site discovery (`recommendations` app scaffolded)
-- Conversational AI assistant for natural-language site Q&A (`geochat` app scaffolded)
-
-See the full [Roadmap](#roadmap) below for the complete build sequence.
+- **Highway Connectivity Intelligence** — identifies the nearest *named* highway and local settlements connected nearby, weighted by population, to yield highly realistic regional accessibility models.
+- **Industry-Specific Weight Profiles** — Warehousing/Logistics, General Manufacturing, Chemical/Hazardous, IT/Electronics, and Food Processing each apply a purpose-built weighting schema to site evaluations.
+- **LightGBM ML Surrogate Model** — combines a trained gradient-boosting model with transparent rule-based MCDA scores for explainable, high-fidelity suitability predictions.
+- **PostGIS-Powered Spatial Queries** — runs highly optimized spatial indexes and queries (`ST_Distance`, KNN `<->` operators) inside the database.
+- **Interactive Map Interface** — click-to-select MCDA algorithms, coordinate pins, and optimized suggestions on MapLibre GL canvas.
+- **User Authentication & Google SSO** — secure accounts featuring instant Google OAuth2 sign-in bypass, custom avatar uploading, and strict read-only profile configurations.
+- **Node Deployment & Catalog** — save and manage analysis projects as deployed nodes with customized rating status tags (Excellent, Good, Moderate, Poor) matched site-wide.
+- **Automated PDF Audits** — export high-contrast, printer-friendly PDF reports detailing suitability criteria, infrastructure link narratives, and MCDA scorecards.
+- **Compare Hub** — side-by-side suitability grids comparing general industry weights, two specific points, or multiple industry profiles.
+- **AI GeoChat Companion** — an LLM-powered interactive assistant providing strategic advice and location summaries grounded on your node context.
+- **AI Site Scout** — proactive recommendation search looking up the top suitability coordinates for any chosen sector and area.
 
 ---
 
@@ -97,7 +92,7 @@ See the full [Roadmap](#roadmap) below for the complete build sequence.
 | **Machine Learning** | LightGBM, scikit-learn, pandas, joblib |
 | **Model Training** | Google Colab (GPU-accelerated notebooks) |
 | **Spatial Data** | OpenStreetMap extracts (roads, railways, POIs), shapefiles |
-| **Auth** | Django REST Framework + JWT *(in progress)* |
+| **Auth** | JWT Tokens, Google OAuth2 SSO |
 | **Deployment (planned)** | Docker, GitHub Actions CI/CD, Vercel (frontend) |
 
 ---
@@ -242,13 +237,13 @@ This project is being built in deliberate, sequential stages — each one valida
 - [x] **PostGIS spatial data pipeline** — road, rail, water, protected area, demographic, and land-use layers
 - [x] **LightGBM ML surrogate** — trained on bootstrapped labels, blended with rule-based scoring
 - [x] **Interactive map + analysis dashboard** — React + MapLibre GL frontend
-- [ ] **User accounts & saved projects** — authentication, site bookmarking, comparison view
-- [ ] **Automated PDF reports** — feasibility reports with maps, scorecards, and narrative justification
+- [x] **User accounts & saved projects** — Google SSO & JWT accounts, site bookmarking, comparison view
+- [x] **Automated PDF reports** — high-contrast feasibility reports with maps, scorecards, and narrative justification
+- [x] **Conversational AI assistant** — GeoChat LLM-powered, data-grounded site Q&A and auto-narrative reports
+- [x] **AI Site Scout** — proactive top-N suitability scout and recommendations across a region
 - [ ] **Multi-tenant SaaS foundation** — organizations, role-based access control, billing
 - [ ] **Predictive analytics** — land price and infrastructure growth forecasting
 - [ ] **Satellite imagery AI** — CNN-based land-use verification and change detection
-- [ ] **Conversational AI assistant** — LLM-powered, data-grounded site Q&A and auto-narrative reports
-- [ ] **AI Site Scout** — proactive top-N site recommendation across a region
 - [ ] **Enterprise hardening** — SSO, compliance/audit logging, multi-region deployment
 
 ---
