@@ -23,12 +23,13 @@ function getIndustryIcon(type) {
 function ScoreBadge({ score }) {
   if (score == null) return null;
   const n = Number(score);
-  let color, bg, border;
-  if (n >= 70) { color = 'var(--c-success)'; bg = 'var(--c-surface-hover)'; border = 'var(--border-subtle)'; }
-  else if (n >= 45) { color = 'var(--c-accent-600)'; bg = 'var(--c-surface-hover)'; border = 'var(--border-subtle)'; }
-  else { color = 'var(--c-error)'; bg = 'var(--c-surface-hover)'; border = 'var(--border-subtle)'; }
+  let color;
+  if (n >= 80) { color = 'var(--c-success)'; }
+  else if (n >= 60) { color = 'var(--c-info)'; }
+  else if (n >= 40) { color = 'var(--c-warning)'; }
+  else { color = 'var(--c-error)'; }
   return (
-    <span style={{ padding: '4px 10px', borderRadius: '8px', background: bg, border: `1px solid ${border}`, color, fontSize: '12.5px', fontWeight: '800', whiteSpace: 'nowrap' }}>
+    <span style={{ padding: '4px 10px', borderRadius: '8px', background: 'var(--c-surface-hover)', border: '1px solid var(--border-subtle)', color, fontSize: '12.5px', fontWeight: '800', whiteSpace: 'nowrap' }}>
       {n.toFixed(1)}/100
     </span>
   );
@@ -46,9 +47,14 @@ function NodeCard({ project, index, onClick }) {
   }
 
   const score = analysisData?.mcda_final_suitability_score ?? analysisData?.final_suitability_score;
+  const scoreNum = Number(score) || 0;
   const industry = analysisData?.industry_type || analysisData?.industry || 'General';
   const district = analysisData?.district || 'Gujarat';
-  const label = analysisData?.lightgbm_predicted_label || '';
+
+  let label = 'Poor', labelColor = 'var(--c-error)';
+  if (scoreNum >= 80) { label = 'Excellent'; labelColor = 'var(--c-success)'; }
+  else if (scoreNum >= 60) { label = 'Good'; labelColor = 'var(--c-info)'; }
+  else if (scoreNum >= 40) { label = 'Moderate'; labelColor = 'var(--c-warning)'; }
 
   const ACCENT_COLORS = [
     { accent: 'var(--c-primary-600)', bg: 'var(--c-surface-alt)', border: 'var(--border-subtle)' },
@@ -103,7 +109,7 @@ function NodeCard({ project, index, onClick }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
         {label ? (
-          <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', background: 'var(--c-surface-alt)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)', fontWeight: '600' }}>
+          <span style={{ fontSize: '11.5px', padding: '4px 10px', borderRadius: '6px', background: 'var(--c-surface-alt)', color: labelColor, border: '1px solid var(--border-subtle)', fontWeight: '800' }}>
             {label}
           </span>
         ) : <span />}

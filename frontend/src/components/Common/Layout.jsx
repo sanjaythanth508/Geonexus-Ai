@@ -135,7 +135,13 @@ function DashboardLayout({ children, hideNav = false }) {
   const avatar = user?.profile?.avatar_url || user?.avatar_url;
   const initials = displayName[0]?.toUpperCase() || 'U';
 
-  const menuItems = [];
+  const menuItems = [
+    { path: '/home', label: 'Home', icon: 'home' },
+    { path: '/analysis', label: 'Analysis', icon: 'analysis' },
+    { path: '/compare', label: 'Compare', icon: 'compare' },
+    { path: '/nodes', label: 'Nodes', icon: 'nodes' },
+    { path: '/chat', label: 'GeoChat', icon: 'chat' },
+  ];
 
   const currentPath = location.pathname;
   const isActive = (path) => {
