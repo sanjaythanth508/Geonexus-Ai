@@ -38,25 +38,25 @@ export default function ResultsPanel({ result, onSave }) {
   
   // Single-word site classification
   let categoryLabel = "Moderate";
-  let categoryColor = "#22D3EE"; // Cyan
-  let categoryBg = "rgba(34, 211, 238, 0.12)";
-  let categoryBorder = "rgba(34, 211, 238, 0.3)";
+  let categoryColor = "var(--c-info)";
+  let categoryBg = "var(--c-info-light)";
+  let categoryBorder = "var(--c-info)";
 
   if (scoreNum >= 75 || lightgbm_predicted_label.toLowerCase().includes('high') || lightgbm_predicted_label.toLowerCase().includes('excellent')) {
     categoryLabel = "Excellent";
-    categoryColor = "#10B981"; // Green
-    categoryBg = "rgba(16, 185, 129, 0.12)";
-    categoryBorder = "rgba(16, 185, 129, 0.3)";
+    categoryColor = "var(--c-success)";
+    categoryBg = "var(--c-success-light)";
+    categoryBorder = "var(--c-success)";
   } else if (scoreNum >= 50 || lightgbm_predicted_label.toLowerCase().includes('moderate') || lightgbm_predicted_label.toLowerCase().includes('good')) {
     categoryLabel = "Good";
-    categoryColor = "#22D3EE"; // Cyan
-    categoryBg = "rgba(34, 211, 238, 0.12)";
-    categoryBorder = "rgba(34, 211, 238, 0.3)";
+    categoryColor = "var(--c-info)";
+    categoryBg = "var(--c-info-light)";
+    categoryBorder = "var(--c-info)";
   } else {
     categoryLabel = "Poor";
-    categoryColor = "#EF4444"; // Red
-    categoryBg = "rgba(239, 68, 68, 0.12)";
-    categoryBorder = "rgba(239, 68, 68, 0.3)";
+    categoryColor = "var(--c-error)";
+    categoryBg = "var(--c-error-light)";
+    categoryBorder = "var(--c-error)";
   }
 
   const handleOpenReport = () => {
@@ -93,7 +93,7 @@ export default function ResultsPanel({ result, onSave }) {
   return (
     <div style={{
       padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px',
-      background: 'var(--glass-bg)', borderRadius: 'var(--r-lg)',
+      background: 'var(--c-surface)', borderRadius: 'var(--r-lg)',
       border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)',
     }} className="anim-fadeIn">
       
@@ -103,7 +103,7 @@ export default function ResultsPanel({ result, onSave }) {
           {district || "Gujarat Region"} · {industry_type}
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '6px' }}>
-          <div style={{ fontSize: '36px', fontWeight: '900', fontFamily: 'var(--font-display)', color: 'var(--cyan)', lineHeight: 1 }}>
+          <div style={{ fontSize: '36px', fontWeight: '900', fontFamily: 'var(--font-display)', color: 'var(--c-primary-600)', lineHeight: 1 }}>
             {scoreNum.toFixed(1)} <span style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: '600' }}>/100</span>
           </div>
         </div>
@@ -127,18 +127,18 @@ export default function ResultsPanel({ result, onSave }) {
             </div>
             <div style={{
               width: '12px', height: '12px', borderRadius: '50%', background: categoryColor,
-              boxShadow: `0 0 10px ${categoryColor}`
+              boxShadow: `0 0 10px ${categoryBg}`
             }} />
           </div>
 
           {/* Corridors Overview */}
           <div style={{
             padding: '12px', borderRadius: 'var(--r-sm)',
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)',
+            background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)',
             fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '6px', color: 'var(--text-secondary)'
           }}>
-            <div>📍 <strong>Highway:</strong> {nearest_highway_ref || "NH Corridor"} <span style={{ color: 'var(--emerald)', fontWeight: '700' }}>(+{(highway_corridor_bonus * 100).toFixed(0)}%)</span></div>
-            <div>🌊 <strong>Water Access:</strong> {nearest_river_name || "Regional Water"} <span style={{ color: 'var(--purple)', fontWeight: '700' }}>({(river_reliability_bonus * 100).toFixed(0)}%)</span></div>
+            <div> <strong>Highway:</strong> {nearest_highway_ref || "NH Corridor"} <span style={{ color: 'var(--c-success)', fontWeight: '700' }}>(+{(highway_corridor_bonus * 100).toFixed(0)}%)</span></div>
+            <div> <strong>Water Access:</strong> {nearest_river_name || "Regional Water"} <span style={{ color: 'var(--c-primary-500)', fontWeight: '700' }}>({(river_reliability_bonus * 100).toFixed(0)}%)</span></div>
           </div>
 
           {/* Buttons Layout */}
@@ -159,19 +159,19 @@ export default function ResultsPanel({ result, onSave }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 padding: '11px',
                 borderRadius: 'var(--r-md)',
-                background: 'rgba(34, 211, 238, 0.1)',
-                border: '1px solid rgba(34, 211, 238, 0.25)',
-                color: 'var(--cyan)',
+                background: 'var(--c-primary-50)',
+                border: '1px solid var(--c-primary-200)',
+                color: 'var(--c-primary-700)',
                 fontWeight: '700', fontSize: '13px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(34, 211, 238, 0.15)';
-                e.currentTarget.style.boxShadow = '0 0 10px rgba(34, 211, 238, 0.15)';
+                e.currentTarget.style.background = 'var(--c-primary-100)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(34, 211, 238, 0.1)';
+                e.currentTarget.style.background = 'var(--c-primary-50)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
@@ -183,8 +183,8 @@ export default function ResultsPanel({ result, onSave }) {
       ) : (
         /* Save Node Form */
         <form onSubmit={handleSaveNode} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }} className="anim-fadeIn">
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '6px' }}>
-            💾 Configure Siting Asset
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--text-muted)', paddingBottom: '6px' }}>
+             Configure Siting Asset
           </div>
 
           {/* Node Name */}
@@ -221,14 +221,14 @@ export default function ResultsPanel({ result, onSave }) {
 
           {/* Error Message */}
           {savingStatus === 'error' && (
-            <div style={{ color: '#ef4444', fontSize: '12px', fontWeight: '600' }}>
-              ⚠️ Failed to save site node.
+            <div style={{ color: 'var(--c-error)', fontSize: '12px', fontWeight: '600' }}>
+              ️ Failed to save site node.
             </div>
           )}
 
           {/* Status Feedback */}
           {savingStatus === 'success' && (
-            <div style={{ color: '#10b981', fontSize: '12.5px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ color: 'var(--c-success)', fontSize: '12.5px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
               System Node Registered!
             </div>

@@ -3,21 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { renderMarkdownToReact } from '../utils/markdownParser';
+import Layout from '../components/Common/Layout';
 
 const STORAGE_KEY = 'geochat_conversations_v3';
 const ACTIVE_SESSION_KEY = 'geochat_active_session_id';
 
 const WELCOME_MESSAGE = {
   role: 'assistant',
-  content: `### 🌐 Welcome to GeoNexus Spatial AI Assistant
+  content: `### Welcome to GeoNexus Spatial AI Assistant
 
 I am your domain-specialized industrial siting, GIS intelligence, and environmental compliance copilot for Gujarat.
 
 **How can I assist you today?**
-- 📍 **Compare Siting Locations**: Ask *"Which city is preferable for Cotton industry: Surat or Ahmedabad?"*
-- 🏭 **Analyze Location Suitability**: Inquire with coordinates (e.g. \`22.98, 72.38\`) and an industry type.
-- 📜 **Statutory Clearances**: Ask about GPCB CTE/CTO procedures, CPCB Red/Orange/Green categories, and EIA 2006.
-- 🗺️ **Infrastructure Proximity**: Check distances to GETCO substations, highways, rivers, gas lines, and ports.`,
+-  **Compare Siting Locations**: Ask *"Which city is preferable for Cotton industry: Surat or Ahmedabad?"*
+- **Analyze Location Suitability**: Inquire with coordinates (e.g. \`22.98, 72.38\`) and an industry type.
+- **Statutory Clearances**: Ask about GPCB CTE/CTO procedures, CPCB Red/Orange/Green categories, and EIA 2006.
+- **Infrastructure Proximity**: Check distances to GETCO substations, highways, rivers, gas lines, and ports.`,
   metadata: null
 };
 
@@ -364,7 +365,7 @@ export default function GeoChat() {
         if (s.id === targetSessionId) {
           return {
             ...s,
-            messages: [...s.messages, { role: 'assistant', content: `⚠️ ${errDetail}`, metadata: null }]
+            messages: [...s.messages, { role: 'assistant', content: `️ ${errDetail}`, metadata: null }]
           };
         }
         return s;
@@ -392,36 +393,21 @@ export default function GeoChat() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100vh',
-      width: '100vw',
-      background: 'var(--bg-primary, #0a0e1a)',
-      overflow: 'hidden',
-      color: 'var(--text-primary, #f8fafc)'
-    }}>
+    <Layout hideNav={true}>
+      <div className="flex h-screen w-full bg-transparent overflow-hidden text-[var(--text-primary)] relative">
       {/* ========================================================================= */}
       {/* CHATGPT-STYLE SIDEBAR */}
       {/* ========================================================================= */}
-      <aside style={{
-        width: sidebarOpen ? '260px' : '0px',
-        minWidth: sidebarOpen ? '260px' : '0px',
-        height: '100%',
-        background: 'rgba(10, 14, 26, 0.95)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        overflow: 'hidden',
-        zIndex: 50,
-      }}>
+      <aside 
+        className={`absolute md:relative z-50 h-full bg-[var(--c-surface-alt)] border-r border-[var(--border-default)] flex flex-col transition-all duration-300 ease-out overflow-hidden shadow-2xl md:shadow-none ${sidebarOpen ? 'w-[280px] translate-x-0' : 'w-[0px] -translate-x-full md:translate-x-0'}`}
+      >
         {/* Top Action Header */}
         <div style={{
           padding: '14px 12px',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+          borderBottom: '1px solid var(--border-subtle)'
         }}>
           <button
             onClick={createNewChat}
@@ -433,16 +419,16 @@ export default function GeoChat() {
               gap: '8px',
               padding: '9px 14px',
               borderRadius: '8px',
-              background: 'linear-gradient(135deg, rgba(34,211,238,0.15), rgba(59,130,246,0.15))',
-              border: '1px solid rgba(34,211,238,0.3)',
-              color: '#22d3ee',
+              background: '',
+              border: '1px solid var(--c-primary-700)',
+              color: 'var(--text-primary)fff',
               fontSize: '13.5px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34,211,238,0.25), rgba(59,130,246,0.25))'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34,211,238,0.15), rgba(59,130,246,0.15))'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-primary-700)'; e.currentTarget.color = ''; }}
+            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.color = 'var(--text-primary)fff';}}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round"/>
@@ -457,7 +443,7 @@ export default function GeoChat() {
               borderRadius: '8px',
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-muted, #94a3b8)',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -486,7 +472,7 @@ export default function GeoChat() {
             fontWeight: '600',
             textTransform: 'uppercase',
             letterSpacing: '0.06em',
-            color: 'rgba(255,255,255,0.4)',
+            color: 'var(--text-muted)',
             padding: '6px 8px 4px'
           }}>
             Recent Chats
@@ -511,14 +497,14 @@ export default function GeoChat() {
                   padding: '9px 10px',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  background: isActive ? 'rgba(34, 211, 238, 0.12)' : 'transparent',
-                  border: isActive ? '1px solid rgba(34, 211, 238, 0.25)' : '1px solid transparent',
-                  color: isActive ? '#22d3ee' : 'var(--text-secondary, #cbd5e1)',
+                  background: isActive ? 'var(--c-primary-50)' : 'transparent',
+                  border: isActive ? '1px solid var(--border-accent)' : '1px solid transparent',
+                  color: isActive ? 'var(--c-primary-700)' : 'var(--text-secondary)',
                   fontSize: '13px',
                   transition: 'all 0.15s'
                 }}
                 onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                  if (!isActive) e.currentTarget.style.background = 'var(--c-surface-hover)';
                 }}
                 onMouseLeave={e => {
                   if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -547,7 +533,7 @@ export default function GeoChat() {
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.3)',
+                    color: 'var(--text-muted)',
                     padding: '2px 4px',
                     borderRadius: '4px',
                     display: 'flex',
@@ -555,8 +541,8 @@ export default function GeoChat() {
                     justifyContent: 'center',
                     transition: 'color 0.15s'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--c-error)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
                   title="Delete chat"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -572,35 +558,21 @@ export default function GeoChat() {
         {/* Sidebar Footer */}
         <div style={{
           padding: '12px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           gap: '10px'
         }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: '700',
-            fontSize: '13px',
-            color: '#fff'
-          }}>
-            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user?.name || 'Enterprise User'}
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted, #94a3b8)' }}>
-              GeoNexus AI Pro
-            </div>
-          </div>
         </div>
       </aside>
+
+      {/* Mobile backdrop overlay to close sidebar */}
+      {sidebarOpen && (
+        <div 
+          className="md:hidden absolute inset-0 bg-black/20 z-40 backdrop-blur-sm transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* MAIN CHAT AREA */}
@@ -611,7 +583,7 @@ export default function GeoChat() {
         flexDirection: 'column',
         height: '100%',
         position: 'relative',
-        background: 'var(--bg-primary, #0a0e1a)'
+        background: 'var(--bg-primary)'
       }}>
         {/* Top Navbar */}
         <header style={{
@@ -621,9 +593,9 @@ export default function GeoChat() {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 20px',
-          background: 'rgba(10, 14, 26, 0.85)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'var(--c-surface)',
+          
+          borderBottom: '1px solid var(--border-default)',
           zIndex: 40,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -631,8 +603,8 @@ export default function GeoChat() {
               <button
                 onClick={() => setSidebarOpen(true)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'var(--c-surface)',
+                  border: '1px solid var(--border-default)',
                   cursor: 'pointer',
                   color: 'var(--text-primary)',
                   padding: '6px 10px',
@@ -659,7 +631,7 @@ export default function GeoChat() {
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
-                color: 'var(--text-secondary, #94a3b8)',
+                color: 'var(--text-secondary, var(--border-default))',
                 padding: '6px',
                 borderRadius: '6px',
                 display: 'flex',
@@ -674,9 +646,9 @@ export default function GeoChat() {
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: '700', fontSize: '15px', letterSpacing: '-0.02em' }}>
-                <span style={{ color: '#22d3ee' }}>GeoNexus</span>
-                <span style={{ color: '#f8fafc' }}> AI</span>
+              <span style={{ fontWeight: '750', fontSize: '15px', letterSpacing: '-0.02em', fontFamily: 'var(--font-display)' }}>
+                <span style={{ color: 'var(--c-primary-600)' }}>GeoNexus</span>
+                <span style={{ color: 'var(--text-primary)' }}> AI</span>
               </span>
             </div>
           </div>
@@ -688,8 +660,8 @@ export default function GeoChat() {
                 padding: '6px 12px',
                 fontSize: '12.5px',
                 borderRadius: '20px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid var(--border-default)',
+                background: 'var(--c-surface)',
                 color: 'var(--text-primary)',
                 cursor: 'pointer',
                 display: 'flex',
@@ -697,28 +669,14 @@ export default function GeoChat() {
                 gap: '6px'
               }}
             >
-              ✨ New Chat
+               New Chat
             </button>
           </div>
         </header>
 
         {/* Message Thread */}
-        <main style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '24px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}>
-          <div style={{
-            width: '100%',
-            maxWidth: '820px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-            paddingBottom: '60px'
-          }}>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col items-center w-full">
+          <div className="w-full max-w-4xl flex flex-col gap-6 pb-20">
             {currentMessages.map((msg, idx) => (
               <div
                 key={idx}
@@ -735,21 +693,19 @@ export default function GeoChat() {
                   height: '34px',
                   borderRadius: '10px',
                   flexShrink: 0,
-                  background: msg.role === 'user'
-                    ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
-                    : 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(59,130,246,0.2))',
-                  border: `1px solid ${msg.role === 'user' ? 'rgba(59,130,246,0.4)' : 'rgba(34,211,238,0.35)'}`,
+                  background: msg.role === 'user' ? 'var(--c-primary-600)' : 'var(--c-surface)',
+                  border: `1px solid ${msg.role === 'user' ? 'transparent' : 'var(--border-default)'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: msg.role === 'assistant' ? '0 0 12px rgba(34,211,238,0.15)' : 'none',
+                  boxShadow: msg.role === 'assistant' ? 'var(--shadow-sm)' : 'none',
                 }}>
                   {msg.role === 'user' ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-primary-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="12 2 2 7 12 12 22 7 12 2"/>
                       <polyline points="2 17 12 22 22 17"/>
                       <polyline points="2 12 12 17 22 12"/>
@@ -767,14 +723,10 @@ export default function GeoChat() {
                   <div style={{
                     padding: msg.role === 'user' ? '12px 18px' : '18px 22px',
                     borderRadius: '16px',
-                    background: msg.role === 'user'
-                      ? 'linear-gradient(135deg, #2563eb, #1d4ed8)'
-                      : 'rgba(255, 255, 255, 0.03)',
-                    border: msg.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
-                    color: msg.role === 'user' ? '#fff' : 'var(--text-primary, #f8fafc)',
-                    boxShadow: msg.role === 'user'
-                      ? '0 4px 14px rgba(37,99,235,0.3)'
-                      : '0 4px 20px rgba(0, 0, 0, 0.25)',
+                    background: msg.role === 'user' ? 'var(--c-primary-50)' : 'var(--c-surface)',
+                    border: msg.role === 'user' ? '1px solid var(--c-primary-200)' : '1px solid var(--border-default)',
+                    color: msg.role === 'user' ? 'var(--text-primary)' : 'var(--text-primary)',
+                    boxShadow: msg.role === 'user' ? 'none' : 'var(--shadow-sm)',
                     fontSize: '14.5px',
                     lineHeight: '1.65',
                     borderTopRightRadius: msg.role === 'user' ? '4px' : '16px',
@@ -791,7 +743,7 @@ export default function GeoChat() {
                             display: 'inline-block',
                             width: '8px',
                             height: '16px',
-                            background: '#22d3ee',
+                            background: 'var(--c-primary-500)',
                             marginLeft: '4px',
                             verticalAlign: 'middle',
                             animation: 'pulse 1s infinite'
@@ -808,7 +760,7 @@ export default function GeoChat() {
                         justifyContent: 'flex-end',
                         marginTop: '12px',
                         paddingTop: '8px',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+                        borderTop: '1px solid var(--border-subtle)'
                       }}>
                         <button
                           onClick={() => copyToClipboard(msg.content, idx)}
@@ -816,7 +768,7 @@ export default function GeoChat() {
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
-                            color: 'var(--text-muted, #94a3b8)',
+                            color: 'var(--text-muted)',
                             fontSize: '12px',
                             display: 'flex',
                             alignItems: 'center',
@@ -825,14 +777,14 @@ export default function GeoChat() {
                             borderRadius: '4px',
                             transition: 'color 0.15s'
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.color = '#22d3ee'; }}
-                          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted, #94a3b8)'; }}
+                          onMouseEnter={e => { e.currentTarget.style.color = 'var(--c-primary-700)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted, var(--border-default))'; }}
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                           </svg>
-                          {copiedIdx === idx ? '✓ Copied' : 'Copy'}
+                          {copiedIdx === idx ? ' Copied' : 'Copy'}
                         </button>
                       </div>
                     )}
@@ -848,13 +800,13 @@ export default function GeoChat() {
                   height: '34px',
                   borderRadius: '10px',
                   flexShrink: 0,
-                  background: 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(59,130,246,0.2))',
-                  border: '1px solid rgba(34,211,238,0.35)',
+                  background: 'var(--c-surface)',
+                  border: '1px solid var(--border-default)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-primary-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="12 2 2 7 12 12 22 7 12 2"/>
                     <polyline points="2 17 12 22 22 17"/>
                     <polyline points="2 12 12 17 22 12"/>
@@ -864,16 +816,16 @@ export default function GeoChat() {
                   padding: '16px 20px',
                   borderRadius: '16px',
                   borderTopLeftRadius: '4px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'var(--c-surface)',
+                  border: '1px solid var(--border-default)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22d3ee', animation: 'pulse 1.4s infinite 0s' }} />
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', animation: 'pulse 1.4s infinite 0.2s' }} />
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8b5cf6', animation: 'pulse 1.4s infinite 0.4s' }} />
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary, #94a3b8)', marginLeft: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--c-primary-500)', animation: 'pulse 1.4s infinite 0s' }} />
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--c-primary-500)', animation: 'pulse 1.4s infinite 0.2s' }} />
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--c-primary-600)', animation: 'pulse 1.4s infinite 0.4s' }} />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary, var(--border-default))', marginLeft: '6px' }}>
                     Consulting GeoNexus ML models & spatial GIS data...
                   </span>
                 </div>
@@ -887,16 +839,7 @@ export default function GeoChat() {
         {/* ========================================================================= */}
         {/* FOOTER INPUT BAR & CONTROLS */}
         {/* ========================================================================= */}
-        <footer style={{
-          padding: '12px 20px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '10px',
-          background: 'linear-gradient(to top, rgba(10,14,26,1) 80%, rgba(10,14,26,0))',
-          position: 'relative',
-          zIndex: 10,
-        }}>
+        <footer className="p-3 sm:p-5 flex flex-col items-center gap-3 bg-[var(--c-surface)] relative z-10 w-full">
           {/* Floating Stop Generating Button */}
           {isStreaming && (
             <button
@@ -907,31 +850,23 @@ export default function GeoChat() {
                 gap: '6px',
                 padding: '6px 14px',
                 borderRadius: '20px',
-                background: 'rgba(15, 23, 42, 0.9)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#f8fafc',
+                background: 'var(--c-surface)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-primary)',
                 fontSize: '12.5px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                boxShadow: 'var(--shadow-md)',
                 marginBottom: '4px'
               }}
             >
-              <span style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '2px' }} />
+              <span style={{ width: '8px', height: '8px', background: 'var(--c-danger)', borderRadius: '2px' }} />
               Stop Generating
             </button>
           )}
 
           {/* Quick Prompt Starters (shown on fresh chats) */}
           {currentMessages.length <= 1 && (
-            <div style={{
-              display: 'flex',
-              gap: '8px',
-              overflowX: 'auto',
-              maxWidth: '820px',
-              width: '100%',
-              paddingBottom: '4px',
-              scrollbarWidth: 'none'
-            }}>
+            <div className="flex gap-2 overflow-x-auto w-full max-w-4xl pb-1 scrollbar-hide px-1">
               {[
                 "Which city is preferable for Cotton industry: Surat or Ahmedabad?",
                 "How does LightGBM predict suitability score & feature importance?",
@@ -951,24 +886,24 @@ export default function GeoChat() {
                     fontWeight: '500',
                     padding: '7px 14px',
                     borderRadius: '20px',
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    color: 'var(--text-secondary, #cbd5e1)',
+                    background: 'var(--c-surface-hover)',
+                    border: '1px solid transparent',
+                    color: 'var(--text-secondary)',
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = '#22d3ee';
-                    e.currentTarget.style.color = '#22d3ee';
-                    e.currentTarget.style.background = 'rgba(34, 211, 238, 0.06)';
+                    e.currentTarget.style.borderColor = 'var(--c-primary-300)';
+                    e.currentTarget.style.color = 'var(--c-primary-700)';
+                    e.currentTarget.style.background = 'var(--c-primary-50)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.color = 'var(--text-secondary, #cbd5e1)';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    e.currentTarget.style.borderColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'var(--c-surface-hover)';
                   }}
                 >
-                  💡 {prompt}
+                   {prompt}
                 </button>
               ))}
             </div>
@@ -977,22 +912,7 @@ export default function GeoChat() {
           {/* Input Box */}
           <form
             onSubmit={handleSubmit}
-            style={{
-              width: '100%',
-              maxWidth: '820px',
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'flex-end',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '24px',
-              padding: '6px 8px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
-              backdropFilter: 'blur(16px)',
-              transition: 'border-color 0.2s',
-            }}
-            onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.5)'}
-            onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
+            className="w-full max-w-4xl relative flex items-end bg-[var(--c-surface)] border border-[var(--border-default)] focus-within:border-[var(--c-primary-400)] rounded-[24px] p-1.5 sm:p-2 shadow-md transition-colors duration-200"
           >
             <textarea
               value={input}
@@ -1004,7 +924,7 @@ export default function GeoChat() {
                 flex: 1,
                 background: 'transparent',
                 border: 'none',
-                color: 'var(--text-primary, #f8fafc)',
+                color: 'var(--text-primary)',
                 padding: '10px 14px',
                 fontSize: '14px',
                 resize: 'none',
@@ -1026,10 +946,8 @@ export default function GeoChat() {
                 height: '38px',
                 borderRadius: '50%',
                 flexShrink: 0,
-                background: input.trim() && !isLoading && !isStreaming
-                  ? 'linear-gradient(135deg, #22d3ee, #3b82f6)'
-                  : 'rgba(255, 255, 255, 0.06)',
-                color: input.trim() && !isLoading && !isStreaming ? '#0f172a' : 'rgba(255, 255, 255, 0.3)',
+                background: input.trim() && !isLoading && !isStreaming ? 'var(--c-primary-600)' : 'var(--c-neutral-100)',
+                color: input.trim() && !isLoading && !isStreaming ? 'var(--text-primary)fff' : 'var(--text-muted)',
                 border: 'none',
                 cursor: input.trim() && !isLoading && !isStreaming ? 'pointer' : 'default',
                 display: 'flex',
@@ -1046,11 +964,12 @@ export default function GeoChat() {
             </button>
           </form>
 
-          <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.35)', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
             GeoNexus AI delivers ML-predicted siting analysis & GIS intelligence for Gujarat industrial planning.
           </div>
         </footer>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }

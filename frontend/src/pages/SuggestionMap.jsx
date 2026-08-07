@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MapComponent from '../components/Map/MapComponent';
 import LocationCompareModal from '../components/Analysis/LocationCompareModal';
+import Layout from '../components/Common/Layout';
 
 const BackIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -48,8 +49,8 @@ export default function SuggestionMap() {
   const sugLon = suggestion?.longitude;
   const sugScore = Number(suggestion?.mcda_final_suitability_score || 0);
 
-  const selLat = selectedLoc?.latitude || selectedLoc?.lat || lastReport?.latitude;
-  const selLon = selectedLoc?.longitude || selectedLoc?.lon || lastReport?.longitude;
+  const selLat = lastReport?.latitude || selectedLoc?.latitude || selectedLoc?.lat;
+  const selLon = lastReport?.longitude || selectedLoc?.longitude || selectedLoc?.lon;
   const selScore = Number(lastReport?.mcda_final_suitability_score || lastReport?.overall_score || 0);
 
   const distanceKm = getHaversineDistance(selLat, selLon, sugLat, sugLon);
@@ -59,7 +60,7 @@ export default function SuggestionMap() {
     mapMarkers.push({
       lat: Number(selLat),
       lon: Number(selLon),
-      label: `Selected Location (${selScore.toFixed(1)}/100)`,
+      label: `Original Site (${selScore.toFixed(1)}/100)`,
       color: '#EF4444'
     });
   }
@@ -73,148 +74,150 @@ export default function SuggestionMap() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', fontFamily: 'var(--font-sans)', overflow: 'hidden' }}>
+    <Layout hideNav={true}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
 
-      {/* Floating Top Bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000,
-        padding: '16px clamp(16px,4vw,32px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: 'linear-gradient(to bottom, rgba(3,7,18,0.95) 0%, rgba(3,7,18,0.7) 70%, transparent 100%)',
-        pointerEvents: 'none', flexWrap: 'wrap', gap: '12px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'all' }}>
-          <button
-            onClick={() => navigate('/report')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px',
-              background: 'rgba(11,15,25,0.9)', border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '12px', color: 'var(--text-secondary)', cursor: 'pointer',
-              fontSize: '13px', fontWeight: '600', backdropFilter: 'blur(12px)',
-              transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'; e.currentTarget.style.color = 'var(--cyan)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            <BackIcon /> Back to Report
-          </button>
-
-          <div style={{
-            padding: '8px 18px', borderRadius: '12px',
-            background: 'rgba(11,15,25,0.85)', backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px', letterSpacing: '-0.02em' }}>
-              <span style={{ background: 'var(--grad-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>GeoNexus</span>
-              <span style={{ color: '#10B981' }}> Dual Map View</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'all' }}>
-          {distanceKm && (
-            <div style={{
-              padding: '8px 16px', borderRadius: '12px',
-              background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
-              color: '#10B981', fontSize: '13px', fontWeight: '700', backdropFilter: 'blur(12px)'
-            }}>
-              📍 Distance: {distanceKm} km
-            </div>
-          )}
-
-          {lastReport && suggestion && (
-            <button
-              onClick={() => setShowCompareModal(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 18px',
-                background: 'var(--grad-btn)', border: 'none', borderRadius: '12px',
-                color: '#fff', fontSize: '13px', fontWeight: '800', cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(56,189,248,0.25)', fontFamily: 'var(--font-sans)'
-              }}
-            >
-              ⚖️ Side-by-Side Compare
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Full-Screen Map */}
-      <div style={{ flex: 1, position: 'relative' }}>
-        <MapComponent
-          readOnly={true}
-          initialLocation={sugLat ? { latitude: Number(sugLat), longitude: Number(sugLon) } : null}
-          markers={mapMarkers}
-        />
-      </div>
-
-      {/* Bottom Floating Legend / Control Panel */}
-      <div style={{
-        position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-        zIndex: 1000, width: 'calc(100% - 32px)', maxWidth: '680px',
-      }}>
+        {/* Floating Top Bar */}
         <div style={{
-          background: 'rgba(11,15,25,0.92)', backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(56,189,248,0.25)', borderRadius: '20px',
-          padding: '16px 20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(56,189,248,0.1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000,
+          padding: '16px clamp(16px,4vw,32px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'transparent',
+          pointerEvents: 'none', flexWrap: 'wrap', gap: '12px'
         }}>
-          {/* Selected Legend */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#EF4444', border: '2px solid #fff' }} />
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Selected Site</div>
-              <div style={{ fontSize: '14px', fontWeight: '800', color: '#EF4444' }}>{selScore > 0 ? `${selScore.toFixed(1)} / 100` : 'Selected'}</div>
-            </div>
-          </div>
-
-          <div style={{ height: '30px', width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-
-          {/* Suggested Legend */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10B981', border: '2px solid #fff' }} />
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Optimized Nearby Site</div>
-              <div style={{ fontSize: '14px', fontWeight: '800', color: '#10B981' }}>{sugScore > 0 ? `${sugScore.toFixed(1)} / 100` : 'Suggested'}</div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'all' }}>
             <button
               onClick={() => navigate('/report')}
               style={{
-                padding: '8px 14px', borderRadius: '10px', fontSize: '12.5px', fontWeight: '700',
-                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
-                color: '#EF4444', cursor: 'pointer', fontFamily: 'var(--font-sans)'
+                display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px',
+                background: 'var(--c-surface)', border: '1px solid var(--border-default)',
+                borderRadius: '12px', color: 'var(--text-secondary)', cursor: 'pointer',
+                fontSize: '13px', fontWeight: '750',
+                transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--c-primary-400)'; e.currentTarget.style.color = 'var(--c-primary-600)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
             >
-              View Report
+              <BackIcon /> Return to Report
             </button>
-            <button
-              onClick={() => navigate('/analysis/suggestion')}
-              style={{
-                padding: '8px 14px', borderRadius: '10px', fontSize: '12.5px', fontWeight: '700',
-                background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
-                color: '#10B981', cursor: 'pointer', fontFamily: 'var(--font-sans)'
-              }}
-            >
-              View Suggestion
-            </button>
+
+            <div style={{
+              padding: '8px 18px', borderRadius: '12px',
+              background: 'var(--c-surface)',
+              border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)'
+            }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '15px', letterSpacing: '-0.02em' }}>
+                <span style={{ color: 'var(--c-primary-600)' }}>GeoNexus</span>
+                <span style={{ color: 'var(--text-primary)' }}> Dual Map</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Action Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'all' }}>
+            {distanceKm && (
+              <div style={{
+                padding: '8px 16px', borderRadius: '12px',
+                background: 'var(--c-success-light)', border: '1px solid var(--border-subtle)',
+                color: 'var(--c-success)', fontSize: '13px', fontWeight: '750', boxShadow: 'var(--shadow-sm)'
+              }}>
+                 Distance: {distanceKm} km
+              </div>
+            )}
+
+            {lastReport && suggestion && (
+              <button
+                onClick={() => setShowCompareModal(true)}
+                className="btn-primary"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px',
+                  borderRadius: '12px', fontSize: '13px', fontWeight: '800', cursor: 'pointer',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                ️ Compare Both Locations
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Full-Screen Map Component */}
+        <div style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
+          <MapComponent
+            readOnly={true}
+            initialLocation={sugLat ? { latitude: Number(sugLat), longitude: Number(sugLon) } : null}
+            markers={mapMarkers}
+          />
+        </div>
+
+        {/* Bottom Floating Legend Bar */}
+        <div style={{
+          position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 1000, width: 'calc(100% - 32px)', maxWidth: '680px', pointerEvents: 'none'
+        }}>
+          <div style={{
+            background: 'var(--c-surface)', border: '1px solid var(--border-default)', borderRadius: '20px',
+            padding: '16px 20px', pointerEvents: 'all',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
+          }}>
+            
+            {/* Selected Legend */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#EF4444', border: '2px solid var(--c-surface)' }} />
+              <div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '750', textTransform: 'uppercase' }}>Selected Location</div>
+                <div style={{ fontSize: '13.5px', fontWeight: '850', color: 'var(--c-error)' }}>{selScore > 0 ? `${selScore.toFixed(1)} / 100` : '—'}</div>
+              </div>
+            </div>
+
+            <div style={{ height: '30px', width: '1px', background: 'var(--border-subtle)' }} className="hidden sm:block" />
+
+            {/* Suggested Legend */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10B981', border: '2px solid var(--c-surface)' }} />
+              <div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '750', textTransform: 'uppercase' }}>Optimized Siting</div>
+                <div style={{ fontSize: '13.5px', fontWeight: '850', color: 'var(--c-success)' }}>{sugScore > 0 ? `${sugScore.toFixed(1)} / 100` : '—'}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => navigate('/report')}
+                className="btn-ghost"
+                style={{
+                  padding: '8px 14px', borderRadius: '10px', fontSize: '12.5px', fontWeight: '700',
+                  color: 'var(--c-error)', borderColor: 'var(--border-default)', background: 'var(--c-surface-alt)'
+                }}
+              >
+                Report
+              </button>
+              <button
+                onClick={() => navigate('/analysis/suggestion')}
+                className="btn-ghost"
+                style={{
+                  padding: '8px 14px', borderRadius: '10px', fontSize: '12.5px', fontWeight: '700',
+                  color: 'var(--c-success)', borderColor: 'var(--border-default)', background: 'var(--c-surface-alt)'
+                }}
+              >
+                Suggestion
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Side-by-Side Comparison Modal */}
+        {showCompareModal && lastReport && suggestion && (
+          <LocationCompareModal
+            isOpen={showCompareModal}
+            onClose={() => setShowCompareModal(false)}
+            selectedData={lastReport}
+            suggestionData={suggestion}
+          />
+        )}
+
       </div>
-
-      {/* Comparison Modal */}
-      {showCompareModal && lastReport && suggestion && (
-        <LocationCompareModal
-          isOpen={showCompareModal}
-          onClose={() => setShowCompareModal(false)}
-          selectedData={lastReport}
-          suggestionData={suggestion}
-        />
-      )}
-
-    </div>
+    </Layout>
   );
 }

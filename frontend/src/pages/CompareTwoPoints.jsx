@@ -4,39 +4,40 @@ import MapComponent from '../components/Map/MapComponent';
 import { predictSite, getIndustryTypes, INDUSTRY_OPTIONS } from '../api/analysis';
 import { isInsideGujarat } from '../utils/locationValidation';
 import html2pdf from 'html2pdf.js';
+import Layout from '../components/Common/Layout';
 
-/* ── Utility helpers ─────────────────────────────────────── */
+/* ── Utility helpers ── */
 function formatIndustry(val) {
   return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-/* ── StepBar ─────────────────────────────────────────────── */
+/* ── StepBar ── */
 function StepBar({ steps, current }) {
   return (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap' }}>
+    <div className="step-indicator" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap' }}>
       {steps.map((step, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: i < steps.length - 1 ? '1' : 'unset' }}>
+        <div key={i} className="step-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: i < steps.length - 1 ? '1' : 'unset' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            color: i < current ? '#10B981' : i === current ? 'var(--cyan)' : 'var(--text-muted)',
+            color: i < current ? 'var(--c-success)' : i === current ? 'var(--c-primary-600)' : 'var(--text-muted)',
             fontWeight: i === current ? '800' : '600',
             fontSize: '13px', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
           }}>
-            <div style={{
+            <div className="step-dot" style={{
               width: '24px', height: '24px', borderRadius: '50%',
-              background: i < current ? '#10B981' : i === current ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.05)',
-              border: `2px solid ${i < current ? '#10B981' : i === current ? '#38BDF8' : 'rgba(255,255,255,0.1)'}`,
+              background: i < current ? 'var(--c-success)' : i === current ? 'var(--c-primary-50)' : 'var(--c-neutral-50)',
+              border: `2px solid ${i < current ? 'var(--c-success)' : i === current ? 'var(--c-primary-500)' : 'var(--border-subtle)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '11px', fontWeight: '900',
-              color: i < current ? '#fff' : i === current ? '#38BDF8' : 'var(--text-muted)',
+              color: i < current ? 'var(--text-primary)' : i === current ? 'var(--c-primary-600)' : 'var(--text-muted)',
               flexShrink: 0,
             }}>
-              {i < current ? '✓' : i + 1}
+              {i < current ? '' : i + 1}
             </div>
             {step}
           </div>
           {i < steps.length - 1 && (
-            <div style={{ flex: 1, height: '1px', background: i < current ? '#10B981' : 'rgba(255,255,255,0.08)', minWidth: '16px' }} />
+            <div className="step-connector" style={{ flex: 1, height: '2px', background: i < current ? 'var(--c-success)' : 'var(--border-subtle)', minWidth: '16px' }} />
           )}
         </div>
       ))}
@@ -44,38 +45,35 @@ function StepBar({ steps, current }) {
   );
 }
 
-/* ── ScoreBadge ──────────────────────────────────────────── */
+/* ── ScoreBadge ── */
 function ScoreBadge({ score }) {
-  const label = score >= 75 ? 'Excellent' : score >= 55 ? 'Good' : score >= 35 ? 'Moderate' : 'Poor';
-  const color = score >= 75 ? '#10B981' : score >= 55 ? '#22D3EE' : score >= 35 ? '#F59E0B' : '#EF4444';
+  const label = score >= 70 ? 'Excellent' : score >= 40 ? 'Moderate' : 'Poor';
+  const color = score >= 70 ? 'var(--c-success)' : score >= 40 ? 'var(--c-warning)' : 'var(--c-error)';
   return (
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: '6px',
       padding: '6px 14px', borderRadius: '20px',
-      background: `${color}18`, border: `1px solid ${color}40`, color,
+      background: 'var(--c-surface)', border: `1px solid ${color}`, color,
     }}>
       <span style={{ fontSize: '20px', fontWeight: '900' }}>{Number(score).toFixed(1)}</span>
-      <span style={{ fontSize: '11px', fontWeight: '700' }}>/100 — {label}</span>
+      <span style={{ fontSize: '11px', fontWeight: '750' }}>/100 — {label}</span>
     </div>
   );
 }
 
-/* ── Spinner ─────────────────────────────────────────────── */
+/* ── Spinner ── */
 function Spinner() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '48px' }}>
-      <div style={{ width: '48px', height: '48px', position: 'relative' }}>
-        <svg width="48" height="48" viewBox="0 0 48 48" style={{ animation: 'spin 1s linear infinite' }}>
-          <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(56,189,248,0.15)" strokeWidth="3" />
-          <circle cx="24" cy="24" r="20" fill="none" stroke="#38BDF8" strokeWidth="3" strokeDasharray="40 86" strokeLinecap="round" />
-        </svg>
-      </div>
-      <p style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: '600' }}>Running predictions…</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '48px', color: 'var(--text-muted)' }}>
+      <svg width="48" height="48" viewBox="0 0 48 48" style={{ animation: 'spin 1s linear infinite' }}>
+        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--c-primary-100)" strokeWidth="3" />
+        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--c-primary-500)" strokeWidth="3" strokeDasharray="40 86" strokeLinecap="round" />
+      </svg>
+      <p style={{ fontSize: '14.5px', fontWeight: '650' }}>Running suitability prediction models...</p>
     </div>
   );
 }
 
-/* ── MAIN PAGE ───────────────────────────────────────────── */
 export default function CompareTwoPoints() {
   const navigate = useNavigate();
   const pdfRef = useRef(null);
@@ -106,13 +104,13 @@ export default function CompareTwoPoints() {
   }, []);
 
   const handleLocASelect = ({ lat, lon }) => {
-    if (!isInsideGujarat(lat, lon)) { setError('Location A is outside Gujarat. Please pick a point inside Gujarat.'); return; }
+    if (!isInsideGujarat(lat, lon)) { setError('Location A coordinates are outside Gujarat borders.'); return; }
     setError('');
     setLocA({ lat, lon });
   };
 
   const handleLocBSelect = ({ lat, lon }) => {
-    if (!isInsideGujarat(lat, lon)) { setError('Location B is outside Gujarat. Please pick a point inside Gujarat.'); return; }
+    if (!isInsideGujarat(lat, lon)) { setError('Location B coordinates are outside Gujarat borders.'); return; }
     setError('');
     setLocB({ lat, lon });
   };
@@ -129,7 +127,7 @@ export default function CompareTwoPoints() {
       setResultB(rB);
       setStep(3);
     } catch (e) {
-      setError(e?.response?.data?.error || e?.message || 'Prediction failed. Try again.');
+      setError(e?.response?.data?.error || e?.message || 'Prediction engine failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -143,69 +141,64 @@ export default function CompareTwoPoints() {
     }).from(pdfRef.current).save();
   };
 
-  // Build criteria table data
-  const criteriaKeys = resultA && resultB
-    ? Object.keys(resultA.criteria_breakdown || {})
-    : [];
-
+  const criteriaKeys = resultA && resultB ? Object.keys(resultA.criteria_breakdown || {}) : [];
   const scoreA = resultA?.mcda_final_suitability_score ?? 0;
   const scoreB = resultB?.mcda_final_suitability_score ?? 0;
   const winner = scoreA > scoreB ? 'A' : scoreB > scoreA ? 'B' : 'Tie';
 
   const allMarkers = [
-    ...(locA ? [{ lat: locA.lat, lon: locA.lon, color: '#38BDF8', label: 'Site A' }] : []),
-    ...(locB ? [{ lat: locB.lat, lon: locB.lon, color: '#FB923C', label: 'Site B' }] : []),
+    ...(locA ? [{ lat: locA.lat, lon: locA.lon, color: 'var(--c-primary-500)', label: 'Site A' }] : []),
+    ...(locB ? [{ lat: locB.lat, lon: locB.lon, color: 'var(--c-warning)', label: 'Site B' }] : []),
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
-      {/* Background */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse 70% 50% at 10% 20%, rgba(56,189,248,0.08) 0%, transparent 60%), radial-gradient(ellipse 50% 60% at 90% 80%, rgba(99,102,241,0.07) 0%, transparent 55%)' }} />
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.15, backgroundImage: 'radial-gradient(rgba(56,189,248,0.4) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+    <Layout>
+      {/* Subheader */}
+      <div style={{
+        background: 'var(--c-surface)',
+        borderBottom: '1px solid var(--border-subtle)',
+        padding: '12px clamp(16px, 4vw, 40px)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+          <button
+            onClick={() => navigate('/compare')}
+            className="btn-ghost"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '12.5px' }}
+          >
+            ← Compare Hub
+          </button>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '17px', letterSpacing: '-0.02em' }}>
+            <span style={{ color: 'var(--c-primary-600)' }}>Two-Point</span>
+            <span style={{ color: 'var(--text-primary)' }}> Compare</span>
+          </span>
+        </div>
+      </div>
 
-      {/* Navbar */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 100, height: '64px', display: 'flex', alignItems: 'center', padding: '0 clamp(16px, 4vw, 40px)', background: 'rgba(3, 7, 18, 0.85)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.07)', gap: '16px' }}>
-        <button
-          onClick={() => navigate('/compare')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '7px 14px', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'var(--font-sans)' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'; e.currentTarget.style.color = 'var(--cyan)'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
-          Compare Hub
-        </button>
-        <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '17px', letterSpacing: '-0.03em' }}>
-          <span style={{ background: 'linear-gradient(135deg, #38BDF8, #6366F1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Two-Point</span>
-          <span style={{ color: 'var(--text-primary)' }}> Compare</span>
-        </span>
-      </header>
-
-      {/* Content */}
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1000px', margin: '0 auto', padding: 'clamp(32px, 5vw, 56px) clamp(16px, 4vw, 40px)' }}>
+      <main style={{ maxWidth: '1000px', width: '100%', margin: '0 auto', padding: 'clamp(24px,4vw,48px) clamp(16px,4vw,24px)' }} className="anim-fadeIn">
         <StepBar steps={STEPS} current={step} />
 
-        {/* Error */}
         {error && (
-          <div style={{ padding: '12px 18px', borderRadius: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#FCA5A5', fontSize: '13px', fontWeight: '600', marginBottom: '24px' }}>
-            ⚠️ {error}
+          <div style={{ padding: '14px 18px', borderRadius: '12px', background: 'var(--c-error-light)', border: '1px solid var(--c-error)', color: 'var(--c-error)', fontSize: '13.5px', fontWeight: '700', marginBottom: '24px', textAlign: 'center' }}>
+            ️ {error}
           </div>
         )}
 
         {/* STEP 0: Industry */}
         {step === 0 && (
-          <div style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', padding: '36px' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '800', margin: '0 0 8px', letterSpacing: '-0.03em' }}>Select Industry Type</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '0 0 28px' }}>Choose the industry to evaluate both locations against.</p>
-            <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+          <div className="card" style={{ borderRadius: '20px', padding: '36px clamp(16px, 4vw, 36px)', border: '1px solid var(--border-default)' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '900', margin: '0 0 6px', letterSpacing: '-0.02em' }}>Select Target Industry</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '0 0 28px' }}>Choose the industry sector to evaluate both locations against.</p>
+            
+            <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
               {industries.map(ind => (
                 <button
                   key={ind}
                   onClick={() => setIndustry(ind)}
                   style={{
                     padding: '14px 18px', borderRadius: '12px', cursor: 'pointer',
-                    background: industry === ind ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
-                    border: `1.5px solid ${industry === ind ? '#38BDF8' : 'rgba(255,255,255,0.08)'}`,
-                    color: industry === ind ? '#38BDF8' : 'var(--text-secondary)',
+                    background: industry === ind ? 'var(--c-primary-50)' : 'var(--c-surface)',
+                    border: `2px solid ${industry === ind ? 'var(--c-primary-500)' : 'var(--border-subtle)'}`,
+                    color: industry === ind ? 'var(--c-primary-700)' : 'var(--text-secondary)',
                     fontSize: '13px', fontWeight: '700', fontFamily: 'var(--font-sans)',
                     transition: 'all 0.2s', textAlign: 'left',
                   }}
@@ -217,7 +210,8 @@ export default function CompareTwoPoints() {
             <button
               disabled={!industry}
               onClick={() => setStep(1)}
-              style={{ marginTop: '32px', padding: '14px 32px', borderRadius: '12px', background: industry ? 'linear-gradient(135deg, #38BDF8, #6366F1)' : 'rgba(255,255,255,0.05)', border: 'none', color: industry ? '#000' : 'var(--text-muted)', fontSize: '15px', fontWeight: '800', cursor: industry ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-sans)', transition: 'all 0.2s', boxShadow: industry ? '0 4px 20px rgba(56,189,248,0.3)' : 'none' }}
+              className="btn-primary"
+              style={{ marginTop: '32px', padding: '14px 36px', fontSize: '14.5px' }}
             >
               Continue →
             </button>
@@ -226,31 +220,32 @@ export default function CompareTwoPoints() {
 
         {/* STEP 1: Location A */}
         {step === 1 && (
-          <div style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', overflow: 'hidden' }}>
-            <div style={{ padding: '28px 32px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="card" style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border-default)' }}>
+            <div style={{ padding: '24px clamp(16px, 4vw, 32px) 20px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#38BDF8', boxShadow: '0 0 8px #38BDF8' }} />
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', margin: 0, letterSpacing: '-0.03em' }}>Select Location A</h2>
+                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'var(--c-primary-500)', boxShadow: 'var(--shadow-md)' }} />
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '900', margin: 0, letterSpacing: '-0.02em' }}>Select Location A</h2>
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>Click anywhere on the map inside Gujarat to set the first location (shown in blue).</p>
-              {locA && <div style={{ marginTop: '10px', fontSize: '13px', color: '#38BDF8', fontWeight: '600' }}>✓ Location A set: {locA.lat.toFixed(5)}°N, {locA.lon.toFixed(5)}°E</div>}
+              <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', margin: 0 }}>Click anywhere on the map inside Gujarat state borders to set the first location (shown in teal).</p>
+              {locA && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--c-primary-600)', fontWeight: '700', fontVariantNumeric: 'tabular-nums' }}> Location A coordinates: {locA.lat.toFixed(5)}°N, {locA.lon.toFixed(5)}°E</div>}
             </div>
             <div style={{ height: '420px', position: 'relative' }}>
               <MapComponent
                 onLocationSelect={handleLocASelect}
-                markers={locA ? [{ lat: locA.lat, lon: locA.lon, color: '#38BDF8', label: 'Site A' }] : []}
+                markers={locA ? [{ lat: locA.lat, lon: locA.lon, color: 'var(--c-primary-500)', label: 'Site A' }] : []}
               />
             </div>
-            <div style={{ padding: '20px 32px', display: 'flex', gap: '12px' }}>
-              <button onClick={() => setStep(0)} style={{ padding: '12px 24px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+            <div style={{ padding: '20px clamp(16px, 4vw, 32px)', display: 'flex', gap: '12px' }}>
+              <button onClick={() => setStep(0)} className="btn-ghost" style={{ padding: '12px 24px' }}>
                 ← Back
               </button>
               <button
                 disabled={!locA}
                 onClick={() => setStep(2)}
-                style={{ padding: '12px 28px', borderRadius: '10px', background: locA ? 'linear-gradient(135deg, #38BDF8, #6366F1)' : 'rgba(255,255,255,0.05)', border: 'none', color: locA ? '#000' : 'var(--text-muted)', fontSize: '14px', fontWeight: '800', cursor: locA ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-sans)', transition: 'all 0.2s' }}
+                className="btn-primary"
+                style={{ padding: '12px 28px' }}
               >
-                {locA ? 'Continue to Location B →' : 'Click map to set Location A'}
+                {locA ? 'Continue to Location B →' : 'Set Location A'}
               </button>
             </div>
           </div>
@@ -258,14 +253,14 @@ export default function CompareTwoPoints() {
 
         {/* STEP 2: Location B */}
         {step === 2 && (
-          <div style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', overflow: 'hidden' }}>
-            <div style={{ padding: '28px 32px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="card" style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border-default)' }}>
+            <div style={{ padding: '24px clamp(16px, 4vw, 32px) 20px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#FB923C', boxShadow: '0 0 8px #FB923C' }} />
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '800', margin: 0, letterSpacing: '-0.03em' }}>Select Location B</h2>
+                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'var(--c-accent-500)', boxShadow: 'var(--shadow-md)' }} />
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '900', margin: 0, letterSpacing: '-0.02em' }}>Select Location B</h2>
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>Click anywhere inside Gujarat to set the second location (shown in orange).</p>
-              {locB && <div style={{ marginTop: '10px', fontSize: '13px', color: '#FB923C', fontWeight: '600' }}>✓ Location B set: {locB.lat.toFixed(5)}°N, {locB.lon.toFixed(5)}°E</div>}
+              <p style={{ color: 'var(--text-muted)', fontSize: '13.5px', margin: 0 }}>Click anywhere inside Gujarat state borders to set the second location (shown in amber).</p>
+              {locB && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--c-accent-600)', fontWeight: '700', fontVariantNumeric: 'tabular-nums' }}> Location B coordinates: {locB.lat.toFixed(5)}°N, {locB.lon.toFixed(5)}°E</div>}
             </div>
             <div style={{ height: '420px', position: 'relative' }}>
               <MapComponent
@@ -273,16 +268,17 @@ export default function CompareTwoPoints() {
                 markers={allMarkers}
               />
             </div>
-            <div style={{ padding: '20px 32px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <button onClick={() => setStep(1)} style={{ padding: '12px 24px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+            <div style={{ padding: '20px clamp(16px, 4vw, 32px)', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button onClick={() => setStep(1)} className="btn-ghost" style={{ padding: '12px 24px' }}>
                 ← Back
               </button>
               <button
                 disabled={!locB || loading}
                 onClick={runComparison}
-                style={{ padding: '12px 28px', borderRadius: '10px', background: locB ? 'linear-gradient(135deg, #10B981, #38BDF8)' : 'rgba(255,255,255,0.05)', border: 'none', color: locB ? '#000' : 'var(--text-muted)', fontSize: '14px', fontWeight: '800', cursor: locB ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-sans)', transition: 'all 0.2s', boxShadow: locB ? '0 4px 20px rgba(16,185,129,0.3)' : 'none' }}
+                className="btn-primary"
+                style={{ padding: '12px 28px' }}
               >
-                {locB ? '🚀 Run Comparison' : 'Click map to set Location B'}
+                {locB ? ' Run Suitability Comparison' : 'Set Location B'}
               </button>
             </div>
           </div>
@@ -290,78 +286,80 @@ export default function CompareTwoPoints() {
 
         {/* STEP 3: Loading */}
         {loading && (
-          <div style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px' }}>
+          <div className="card" style={{ borderRadius: '20px', border: '1px solid var(--border-default)' }}>
             <Spinner />
           </div>
         )}
 
         {/* STEP 3: Results */}
         {step === 3 && resultA && resultB && !loading && (
-          <div ref={pdfRef}>
+          <div ref={pdfRef} className="anim-fadeIn">
             {/* Winner banner */}
             <div style={{
-              textAlign: 'center', padding: '20px', borderRadius: '16px', marginBottom: '24px',
-              background: winner === 'Tie' ? 'rgba(99,102,241,0.12)' : winner === 'A' ? 'rgba(56,189,248,0.12)' : 'rgba(251,146,60,0.12)',
-              border: `1px solid ${winner === 'Tie' ? 'rgba(99,102,241,0.3)' : winner === 'A' ? 'rgba(56,189,248,0.3)' : 'rgba(251,146,60,0.3)'}`,
+              textAlign: 'center', padding: '24px', borderRadius: '16px', marginBottom: '28px',
+              background: winner === 'Tie' ? 'var(--c-neutral-50)' : winner === 'A' ? 'var(--c-primary-50)' : 'var(--c-accent-50)',
+              border: `1.5px solid ${winner === 'Tie' ? 'var(--border-subtle)' : winner === 'A' ? 'var(--c-primary-200)' : 'var(--c-accent-200)'}`,
             }}>
-              <div style={{ fontSize: '28px', marginBottom: '4px' }}>{winner === 'Tie' ? '🤝' : '🏆'}</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: '900', color: winner === 'Tie' ? '#6366F1' : winner === 'A' ? '#38BDF8' : '#FB923C' }}>
+              <div style={{ fontSize: '28px', marginBottom: '4px' }}>{winner === 'Tie' ? '' : ''}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '950', color: winner === 'Tie' ? 'var(--text-primary)' : winner === 'A' ? 'var(--c-primary-600)' : 'var(--c-accent-600)', letterSpacing: '-0.01em' }}>
                 {winner === 'Tie' ? "It's a Tie!" : `Location ${winner} Wins!`}
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                {winner !== 'Tie' ? `Δ Score: ${Math.abs(scoreA - scoreB).toFixed(1)} points` : 'Both locations score equally'}
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '600' }}>
+                {winner !== 'Tie' ? `Δ Score Delta: ${Math.abs(scoreA - scoreB).toFixed(1)} points` : 'Both locations score equally'}
               </div>
             </div>
 
-            {/* Header info */}
-            <div style={{ marginBottom: '16px', padding: '12px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', fontSize: '13px', color: 'var(--text-muted)' }}>
-              Industry: <strong style={{ color: 'var(--text-primary)' }}>{formatIndustry(industry)}</strong>
-              &nbsp;·&nbsp; Location A: <strong style={{ color: '#38BDF8' }}>{resultA.district || `${locA.lat.toFixed(4)}°N`}</strong>
-              &nbsp;·&nbsp; Location B: <strong style={{ color: '#FB923C' }}>{resultB.district || `${locB.lat.toFixed(4)}°N`}</strong>
+            {/* Header pill */}
+            <div style={{ marginBottom: '24px', padding: '14px 18px', borderRadius: '12px', background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)', fontSize: '13px', color: 'var(--text-muted)' }}>
+              Industry Segment: <strong style={{ color: 'var(--text-primary)' }}>{formatIndustry(industry)}</strong>
+              &nbsp;·&nbsp; Location A: <strong style={{ color: 'var(--c-primary-600)' }}>{resultA.district || `${locA.lat.toFixed(4)}°N`}</strong>
+              &nbsp;·&nbsp; Location B: <strong style={{ color: 'var(--c-accent-600)' }}>{resultB.district || `${locB.lat.toFixed(4)}°N`}</strong>
             </div>
 
             {/* Score cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '32px' }}>
               {[
-                { label: 'Location A', result: resultA, color: '#38BDF8', loc: locA, score: scoreA, isWinner: winner === 'A' },
-                { label: 'Location B', result: resultB, color: '#FB923C', loc: locB, score: scoreB, isWinner: winner === 'B' },
+                { label: 'Location A', result: resultA, color: 'var(--c-primary-500)', loc: locA, score: scoreA, isWinner: winner === 'A' },
+                { label: 'Location B', result: resultB, color: 'var(--c-accent-500)', loc: locB, score: scoreB, isWinner: winner === 'B' },
               ].map(({ label, result, color, loc, score, isWinner }) => (
                 <div key={label} style={{
-                  background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)',
-                  border: `1.5px solid ${isWinner ? color + '60' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '18px', padding: '24px',
-                  boxShadow: isWinner ? `0 0 30px ${color}20` : 'none',
+                  background: 'var(--c-surface)',
+                  border: `1.5px solid ${isWinner ? color : 'var(--border-default)'}`,
+                  borderRadius: '20px', padding: '24px',
+                  boxShadow: isWinner ? `0 12px 32px var(--shadow-md)` : 'var(--shadow-sm)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>{label}</span>
-                    {isWinner && <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: `${color}20`, color, border: `1px solid ${color}40`, fontWeight: '700' }}>Winner</span>}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '17px' }}>{label}</span>
+                    </div>
+                    {isWinner && <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: `${color}20`, color, border: `1px solid ${color}40`, fontWeight: '750' }}>WINNER</span>}
                   </div>
-                  <div style={{ marginBottom: '8px' }}><ScoreBadge score={score} /></div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {result.district && <div>District: {result.district}</div>}
-                    <div>{loc.lat.toFixed(5)}°N, {loc.lon.toFixed(5)}°E</div>
-                    {result.lightgbm_predicted_label && <div>ML Label: <strong style={{ color: 'var(--text-secondary)' }}>{result.lightgbm_predicted_label}</strong></div>}
+                  <div style={{ marginBottom: '14px' }}><ScoreBadge score={score} /></div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    {result.district && <div><b>District:</b> {result.district}</div>}
+                    <div><b>Coords:</b> {loc.lat.toFixed(5)}°N, {loc.lon.toFixed(5)}°E</div>
+                    {result.lightgbm_predicted_label && <div><b>ML Label:</b> <span style={{ color: 'var(--text-secondary)' }}>{result.lightgbm_predicted_label}</span></div>}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Criteria Breakdown Table */}
+            {/* Criteria comparative breakdown table */}
             {criteriaKeys.length > 0 && (
-              <div style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', overflow: 'hidden', marginBottom: '24px' }}>
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: '800', margin: 0 }}>Criteria Breakdown</h3>
+              <div style={{ background: 'var(--c-surface)', border: '1px solid var(--border-default)', borderRadius: '20px', overflow: 'hidden', marginBottom: '32px' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--c-neutral-50)' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16.5px', fontWeight: '850', margin: 0 }}>Suitability Parameter Matrix</h3>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }} className="responsive-table">
                     <thead>
-                      <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                        <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Criterion</th>
-                        <th style={{ padding: '12px 18px', textAlign: 'center', color: '#38BDF8', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Score A</th>
-                        <th style={{ padding: '12px 18px', textAlign: 'center', color: '#FB923C', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Score B</th>
-                        <th style={{ padding: '12px 18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Δ Delta</th>
-                        <th style={{ padding: '12px 18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Weight</th>
+                      <tr style={{ background: 'var(--c-surface)' }}>
+                        <th style={{ padding: '12px 18px', textAlign: 'left', color: 'var(--text-secondary)', fontWeight: '750' }}>Criterion Description</th>
+                        <th style={{ padding: '12px 18px', textAlign: 'center', color: 'var(--c-primary-600)', fontWeight: '750' }}>Score A</th>
+                        <th style={{ padding: '12px 18px', textAlign: 'center', color: 'var(--c-accent-600)', fontWeight: '750' }}>Score B</th>
+                        <th style={{ padding: '12px 18px', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: '750' }}>Δ Delta</th>
+                        <th style={{ padding: '12px 18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '750' }}>Weight</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -371,15 +369,15 @@ export default function CompareTwoPoints() {
                         const sA = cA?.score_100 ?? 0;
                         const sB = cB?.score_100 ?? 0;
                         const delta = sA - sB;
-                        const deltaColor = delta > 0 ? '#10B981' : delta < 0 ? '#EF4444' : 'var(--text-muted)';
+                        const deltaColor = delta > 0 ? 'var(--c-success)' : delta < 0 ? 'var(--c-error)' : 'var(--text-muted)';
                         return (
-                          <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
-                            <td style={{ padding: '11px 18px', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                              {key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                          <tr key={key} style={{ borderBottom: '1px solid var(--border-subtle)', background: idx % 2 === 0 ? 'var(--c-surface)' : 'var(--c-surface-alt)' }}>
+                            <td style={{ padding: '11px 18px', color: 'var(--text-primary)', fontWeight: '600', textTransform: 'capitalize' }}>
+                              {key.replace(/_/g, ' ')}
                             </td>
-                            <td style={{ padding: '11px 18px', textAlign: 'center', color: '#38BDF8', fontWeight: '700' }}>{Number(sA).toFixed(1)}</td>
-                            <td style={{ padding: '11px 18px', textAlign: 'center', color: '#FB923C', fontWeight: '700' }}>{Number(sB).toFixed(1)}</td>
-                            <td style={{ padding: '11px 18px', textAlign: 'center', color: deltaColor, fontWeight: '700' }}>
+                            <td style={{ padding: '11px 18px', textAlign: 'center', color: 'var(--c-primary-600)', fontWeight: '750' }}>{Number(sA).toFixed(1)}</td>
+                            <td style={{ padding: '11px 18px', textAlign: 'center', color: 'var(--c-accent-600)', fontWeight: '750' }}>{Number(sB).toFixed(1)}</td>
+                            <td style={{ padding: '11px 18px', textAlign: 'center', color: deltaColor, fontWeight: '800' }}>
                               {delta > 0 ? '+' : ''}{Number(delta).toFixed(1)}
                             </td>
                             <td style={{ padding: '11px 18px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '600' }}>
@@ -395,8 +393,8 @@ export default function CompareTwoPoints() {
             )}
 
             {/* Score visual bars */}
-            <div style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '18px', padding: '24px', marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: '800', margin: '0 0 20px' }}>Score Visualization</h3>
+            <div className="card" style={{ borderRadius: '20px', padding: '24px clamp(16px, 4vw, 24px)', border: '1px solid var(--border-default)', marginBottom: '32px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: '850', margin: '0 0 20px' }}>Score Parameter Visualizations</h3>
               {criteriaKeys.slice(0, 8).map(key => {
                 const sA = resultA.criteria_breakdown[key]?.score_100 ?? 0;
                 const sB = resultB.criteria_breakdown[key]?.score_100 ?? 0;
@@ -405,24 +403,24 @@ export default function CompareTwoPoints() {
                   <div key={key} style={{ marginBottom: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
                       <span>{label}</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>A: {Number(sA).toFixed(1)} · B: {Number(sB).toFixed(1)}</span>
+                      <span>A: <b style={{ color: 'var(--c-primary-600)' }}>{Number(sA).toFixed(1)}</b> · B: <b style={{ color: 'var(--c-accent-600)' }}>{Number(sB).toFixed(1)}</b></span>
                     </div>
-                    <div style={{ position: 'relative', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', marginBottom: '4px' }}>
-                      <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(sA, 100)}%`, background: 'linear-gradient(90deg, #38BDF8, #6366F1)', borderRadius: '4px', transition: 'width 0.6s ease' }} />
+                    <div style={{ position: 'relative', height: '6px', background: 'var(--c-neutral-50)', borderRadius: '3px', marginBottom: '4px' }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(sA, 100)}%`, background: 'var(--c-primary-500)', borderRadius: '3px', transition: 'width 0.6s ease' }} />
                     </div>
-                    <div style={{ position: 'relative', height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px' }}>
-                      <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(sB, 100)}%`, background: 'linear-gradient(90deg, #FB923C, #F59E0B)', borderRadius: '4px', transition: 'width 0.6s ease' }} />
+                    <div style={{ position: 'relative', height: '6px', background: 'var(--c-neutral-50)', borderRadius: '3px' }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${Math.min(sB, 100)}%`, background: 'var(--c-accent-500)', borderRadius: '3px', transition: 'width 0.6s ease' }} />
                     </div>
                   </div>
                 );
               })}
-              <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                  <div style={{ width: '24px', height: '8px', background: 'linear-gradient(90deg, #38BDF8, #6366F1)', borderRadius: '4px' }} />
+              <div style={{ display: 'flex', gap: '16px', marginTop: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                  <div style={{ width: '24px', height: '6px', background: 'var(--c-primary-500)', borderRadius: '3px' }} />
                   Location A
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                  <div style={{ width: '24px', height: '8px', background: 'linear-gradient(90deg, #FB923C, #F59E0B)', borderRadius: '4px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                  <div style={{ width: '24px', height: '6px', background: 'var(--c-accent-500)', borderRadius: '3px' }} />
                   Location B
                 </div>
               </div>
@@ -430,19 +428,19 @@ export default function CompareTwoPoints() {
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <button onClick={() => navigate('/compare')} style={{ padding: '12px 24px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                ← Back to Compare Hub
+              <button onClick={() => navigate('/compare')} className="btn-ghost" style={{ padding: '12px 24px' }}>
+                ← Return to Hub
               </button>
-              <button onClick={() => { setStep(0); setLocA(null); setLocB(null); setResultA(null); setResultB(null); setError(''); }} style={{ padding: '12px 24px', borderRadius: '10px', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38BDF8', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+              <button onClick={() => { setStep(0); setLocA(null); setLocB(null); setResultA(null); setResultB(null); setError(''); }} className="btn-ghost" style={{ padding: '12px 24px', color: 'var(--c-primary-600)', borderColor: 'var(--c-primary-200)' }}>
                 New Comparison
               </button>
-              <button onClick={handleExportPDF} style={{ padding: '12px 24px', borderRadius: '10px', background: 'linear-gradient(135deg, #10B981, #38BDF8)', border: 'none', color: '#000', fontSize: '14px', fontWeight: '800', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }}>
-                📄 Export PDF
+              <button onClick={handleExportPDF} className="btn-primary" style={{ padding: '12px 28px', boxShadow: 'var(--shadow-md)' }}>
+                 Download PDF Audit
               </button>
             </div>
           </div>
         )}
       </main>
-    </div>
+    </Layout>
   );
 }

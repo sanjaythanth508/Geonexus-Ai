@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MapComponent from '../components/Map/MapComponent';
+import Layout from '../components/Common/Layout';
 
 /* ── Icons ── */
 const HomeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
@@ -11,11 +12,11 @@ const CrosshairIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill
 export default function AnalysisMap() {
   const navigate = useNavigate();
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [confirmed, setConfirmed] = useState(false);
 
   const handleLocationSelect = (loc) => {
     setSelectedLocation(loc);
-    setConfirmed(false);
+    sessionStorage.removeItem('better_site_suggestion');
+    sessionStorage.removeItem('last_prediction_report');
   };
 
   const handleContinue = () => {
@@ -25,122 +26,132 @@ export default function AnalysisMap() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', fontFamily: 'var(--font-sans)', overflow: 'hidden' }}>
+    <Layout hideNav={true}>
+      <div style={{ height: '100vh', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
 
-      {/* Floating top bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000,
-        padding: '16px clamp(16px,4vw,32px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: 'linear-gradient(to bottom, rgba(3,7,18,0.95) 0%, rgba(3,7,18,0.7) 70%, transparent 100%)',
-        pointerEvents: 'none',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'all' }}>
-          <button
-            onClick={() => navigate('/home')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px',
-              background: 'rgba(11,15,25,0.9)', border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '12px', color: 'var(--text-secondary)', cursor: 'pointer',
-              fontSize: '13px', fontWeight: '600', backdropFilter: 'blur(12px)',
-              transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'; e.currentTarget.style.color = 'var(--cyan)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            <HomeIcon /> Home
-          </button>
+        {/* Floating top bar */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000,
+          padding: '16px clamp(16px,4vw,32px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'transparent',
+          pointerEvents: 'none',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'all' }}>
+            <button
+              onClick={() => navigate('/home')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px',
+                background: 'var(--c-surface)', border: '1px solid var(--border-default)',
+                borderRadius: '12px', color: 'var(--text-secondary)', cursor: 'pointer',
+                fontSize: '13px', fontWeight: '700',
+                transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--c-primary-400)'; e.currentTarget.style.color = 'var(--c-primary-600)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+            >
+              <HomeIcon /> Home
+            </button>
 
+            <div style={{
+              padding: '8px 18px', borderRadius: '12px',
+              background: 'var(--c-surface)',
+              border: '1px solid var(--border-default)',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '15px', letterSpacing: '-0.02em' }}>
+                <span className="gradient-text">GeoNexus</span>
+                <span style={{ color: 'var(--text-primary)' }}> Siting</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Instruction pill (hidden on narrow screens) */}
           <div style={{
-            padding: '8px 18px', borderRadius: '12px',
-            background: 'rgba(11,15,25,0.85)', backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px', letterSpacing: '-0.02em' }}>
-              <span style={{ background: 'var(--grad-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>GeoNexus</span>
-              <span style={{ color: 'var(--text-primary)' }}> Analysis</span>
-            </span>
+            pointerEvents: 'none',
+            display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 18px',
+            background: 'var(--c-surface)',
+            border: '1px solid var(--border-default)', borderRadius: '12px',
+            boxShadow: 'var(--shadow-sm)',
+            color: 'var(--text-secondary)', fontSize: '12.5px', fontWeight: '700',
+          }} className="hidden sm:flex">
+            <CrosshairIcon />
+            Select coordinates inside Gujarat state borders
           </div>
         </div>
 
-        {/* Instruction pill */}
-        <div style={{
-          pointerEvents: 'none',
-          display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 18px',
-          background: 'rgba(11,15,25,0.85)', backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
-          color: 'var(--text-secondary)', fontSize: '13px', fontWeight: '600',
-        }}>
-          <CrosshairIcon />
-          Click anywhere on Gujarat to select a location
+        {/* Full-screen map rendering */}
+        <div style={{ flex: 1, position: 'relative', width: '100%', height: '100%' }}>
+          <MapComponent
+            onLocationSelect={handleLocationSelect}
+            markers={selectedLocation ? [{ lat: selectedLocation.lat, lon: selectedLocation.lon, label: 'Selected Site' }] : []}
+          />
         </div>
-      </div>
 
-      {/* Full-screen map */}
-      <div style={{ flex: 1, position: 'relative' }}>
-        <MapComponent onLocationSelect={handleLocationSelect} markers={selectedLocation ? [{ lat: selectedLocation.lat, lon: selectedLocation.lon, label: 'Selected Site' }] : []} />
-      </div>
-
-      {/* Bottom action panel - appears when location selected */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1000,
-        padding: 'clamp(16px,3vw,28px) clamp(16px,4vw,40px)',
-        background: 'linear-gradient(to top, rgba(3,7,18,0.98) 0%, rgba(3,7,18,0.85) 70%, transparent 100%)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      }}>
+        {/* Sliding action card at bottom */}
         <div style={{
-          maxWidth: '640px', width: '100%',
-          transform: selectedLocation ? 'translateY(0)' : 'translateY(120px)',
-          transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
-          opacity: selectedLocation ? 1 : 0,
+          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1000,
+          padding: 'clamp(16px,3vw,28px) clamp(16px,4vw,40px)',
+          background: 'transparent',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          pointerEvents: 'none'
         }}>
           <div style={{
-            background: 'rgba(11,15,25,0.92)', backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(56,189,248,0.25)', borderRadius: '20px',
-            padding: '20px 24px',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.1)',
+            maxWidth: '600px', width: '100%',
+            transform: selectedLocation ? 'translateY(0)' : 'translateY(140px)',
+            transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            opacity: selectedLocation ? 1 : 0,
+            pointerEvents: 'all'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '12px',
-                  background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)',
-                }}>
-                  <PinIcon />
+            <div style={{
+              background: 'var(--c-surface)',
+              border: '1px solid var(--border-default)', borderRadius: '20px',
+              padding: '18px 24px',
+              boxShadow: 'var(--shadow-xl)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '38px', height: '38px', borderRadius: '10px',
+                    background: 'var(--c-primary-50)', border: '1px solid var(--c-primary-100)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--c-primary-600)',
+                  }}>
+                    <PinIcon />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                      Selected Coordinates
+                    </p>
+                    <p style={{ fontSize: '14.5px', fontWeight: '850', color: 'var(--text-primary)', margin: '2px 0 0', fontFamily: 'var(--font-display)', fontVariantNumeric: 'tabular-nums' }}>
+                      {selectedLocation
+                        ? `${Number(selectedLocation.lat).toFixed(5)}° N, ${Number(selectedLocation.lon).toFixed(5)}° E`
+                        : '—'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
-                    Selected Location
-                  </p>
-                  <p style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-primary)', margin: '2px 0 0', fontFamily: 'var(--font-display)' }}>
-                    {selectedLocation
-                      ? `${Number(selectedLocation.lat).toFixed(5)}° N, ${Number(selectedLocation.lon).toFixed(5)}° E`
-                      : '—'}
-                  </p>
-                </div>
-              </div>
 
-              <button
-                onClick={handleContinue}
-                disabled={!selectedLocation}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 28px',
-                  background: 'var(--grad-btn)', border: 'none', borderRadius: '14px',
-                  color: '#fff', fontWeight: '800', fontSize: '15px', cursor: 'pointer',
-                  transition: 'all 0.2s', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
-                  boxShadow: '0 6px 24px rgba(56,189,248,0.25)',
-                  letterSpacing: '-0.01em',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(56,189,248,0.35)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(56,189,248,0.25)'; }}
-              >
-                Choose Industry <ArrowIcon />
-              </button>
+                <button
+                  onClick={handleContinue}
+                  disabled={!selectedLocation}
+                  className="btn-primary"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px',
+                    border: 'none', borderRadius: '12px',
+                    fontWeight: '800', fontSize: '14px', cursor: 'pointer',
+                    transition: 'all 0.22s ease-out', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  Choose Industry <ArrowIcon />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

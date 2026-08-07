@@ -3,100 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { loginWithGoogle } from '../api/auth';
+import Layout from '../components/Common/Layout';
 
-/* ═══════════════════════════════════════════════
-   PARTICLES BACKGROUND
-═══════════════════════════════════════════════ */
-function ParticleField() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = canvas.offsetWidth;
-    let h = canvas.height = canvas.offsetHeight;
-    let animId;
-
-    const particles = Array.from({ length: 60 }, () => ({
-      x: Math.random() * w, y: Math.random() * h,
-      r: Math.random() * 1.2 + 0.3,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      alpha: Math.random() * 0.5 + 0.1,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(34,211,238,${p.alpha})`;
-        ctx.fill();
-      });
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(34,211,238,${0.06 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-    const onResize = () => {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-    };
-    window.addEventListener('resize', onResize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', onResize); };
-  }, []);
-
-  return (
-    <canvas ref={canvasRef} style={{
-      position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',
-    }} />
-  );
-}
-
-function GlobeIcon({ size = 36 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <defs>
-        <linearGradient id="lg-globe" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#22D3EE"/>
-          <stop offset="50%" stopColor="#3B82F6"/>
-          <stop offset="100%" stopColor="#8B5CF6"/>
-        </linearGradient>
-        <filter id="glow-filter">
-          <feGaussianBlur stdDeviation="2" result="blur"/>
-          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-        </filter>
-      </defs>
-      <circle cx="24" cy="24" r="20" stroke="url(#lg-globe)" strokeWidth="1.5" fill="none" filter="url(#glow-filter)"/>
-      <ellipse cx="24" cy="24" rx="10" ry="20" stroke="url(#lg-globe)" strokeWidth="1.5" fill="none"/>
-      <line x1="4" y1="24" x2="44" y2="24" stroke="url(#lg-globe)" strokeWidth="1.5"/>
-      <line x1="8" y1="15" x2="40" y2="15" stroke="url(#lg-globe)" strokeWidth="1" strokeDasharray="2 2"/>
-      <line x1="8" y1="33" x2="40" y2="33" stroke="url(#lg-globe)" strokeWidth="1" strokeDasharray="2 2"/>
-      <circle cx="24" cy="24" r="3.5" fill="url(#lg-globe)"/>
-    </svg>
-  );
-}
-
+/* ── Icons ── */
 const UserIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const LockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-const EyeIcon  = ({open}) => open
+const EyeIcon  = ({ open }) => open
   ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
   : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>;
 const SignInIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
@@ -106,55 +18,27 @@ function LoadSpinner() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-        style={{ animation: 'spin 0.75s linear infinite', transformOrigin:'center' }}/>
+        style={{ animation: 'spin 0.75s linear infinite', transformOrigin: 'center' }}/>
     </svg>
-  );
-}
-
-function Orbs() {
-  return (
-    <>
-      <div style={{ position:'absolute', top:'-10%', left:'-5%', width:'500px', height:'500px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 65%)', pointerEvents:'none', animation:'floatSlow 8s ease-in-out infinite' }} />
-      <div style={{ position:'absolute', bottom:'-15%', right:'-8%', width:'600px', height:'600px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 65%)', pointerEvents:'none', animation:'floatSlow 10s ease-in-out infinite 3s' }} />
-    </>
-  );
-}
-
-function OrbitRings() {
-  return (
-    <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
-      {[220, 340, 460].map((r, i) => (
-        <div key={i} style={{
-          position:'absolute', top:'50%', left:'50%',
-          width:`${r}px`, height:`${r}px`,
-          marginLeft:`${-r/2}px`, marginTop:`${-r/2}px`,
-          borderRadius:'50%',
-          border:`1px solid rgba(34,211,238,${0.04 - i * 0.01})`,
-          animation:`spin ${30 + i * 15}s linear infinite ${i % 2 === 0 ? '' : 'reverse'}`,
-        }} />
-      ))}
-    </div>
   );
 }
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
-  const [step,     setStep]     = useState(0);    
+  const [step, setStep] = useState(0);
   const { loginUser, loginWithTokens } = useAuth();
   const navigate = useNavigate();
   const btnRef = useRef(null);
 
   useEffect(() => {
     const t1 = setTimeout(() => setStep(1), 80);
-    const t2 = setTimeout(() => setStep(2), 280);
-    const t3 = setTimeout(() => setStep(3), 480);
+    const t2 = setTimeout(() => setStep(2), 240);
+    const t3 = setTimeout(() => setStep(3), 400);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
@@ -166,10 +50,10 @@ export default function Login() {
     const y = e.clientY - rect.top;
     const rEl = document.createElement('span');
     Object.assign(rEl.style, {
-      position:'absolute', left:`${x}px`, top:`${y}px`,
-      width:'6px', height:'6px', marginLeft:'-3px', marginTop:'-3px',
-      background:'rgba(255,255,255,0.5)', borderRadius:'50%',
-      animation:'ripple 0.7s ease-out forwards', pointerEvents:'none',
+      position: 'absolute', left: `${x}px`, top: `${y}px`,
+      width: '6px', height: '6px', marginLeft: '-3px', marginTop: '-3px',
+      background: 'var(--text-muted)', borderRadius: '50%',
+      animation: 'ripple 0.7s ease-out forwards', pointerEvents: 'none',
     });
     btn.appendChild(rEl);
     setTimeout(() => rEl.remove(), 700);
@@ -199,7 +83,6 @@ export default function Login() {
       loginWithTokens(data, data.user?.username || 'Google User');
       
       if (data.is_new_user) {
-        // Redirect to registration page with Google payload pre-populated
         navigate('/register', { state: { googleInfo: data.google_info } });
       } else {
         navigate('/home', { replace: true });
@@ -215,228 +98,227 @@ export default function Login() {
   const tf = { transition: 'opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out)' };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      background: `var(--grad-mesh), var(--bg-primary)`,
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <ParticleField />
-      <Orbs />
-
-      <div className="hide-mobile" style={{
-        flex: 1,
+    <Layout authTheme={true}>
+      <div style={{
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '60px',
-        position: 'relative',
-        zIndex: 2,
-      }}>
-        <OrbitRings />
-        <div style={{ textAlign: 'center', maxWidth: '380px', position: 'relative', zIndex: 1 }}>
-          <div className="anim-floatSlow" style={{ marginBottom: '32px', animation: 'float 6s ease-in-out infinite' }}>
-            <GlobeIcon size={100} />
+        gap: '60px',
+        padding: '24px',
+        maxWidth: '1000px',
+        width: '100%',
+      }} className="flex-col md:flex-row">
+        {/* Info Column */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          maxWidth: '380px',
+          ...tf,
+          opacity: step >= 1 ? 1 : 0,
+          transform: step >= 1 ? 'none' : 'translateY(16px)',
+        }} className="hidden md:flex">
+          <div style={{
+            width: '80px', height: '80px', borderRadius: '24px',
+            background: 'var(--c-primary-50)',
+            border: '1px solid var(--c-primary-200)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: '24px',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" stroke="url(#heroGl)" strokeWidth="2.5"/>
+              <ellipse cx="24" cy="24" rx="9" ry="20" stroke="url(#heroGl)" strokeWidth="2"/>
+              <line x1="4" y1="24" x2="44" y2="24" stroke="url(#heroGl)" strokeWidth="2"/>
+              <defs>
+                <linearGradient id="heroGl" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="var(--c-primary-500)"/><stop offset="100%" stopColor="var(--c-primary-700)"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '16px' }}>
             <span className="gradient-text">GeoNexus AI</span>
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '16px', lineHeight: 1.75 }}>
-            Advanced geospatial intelligence platform for real-time analysis, mapping, and location insights.
+          <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.75 }}>
+            Advanced geospatial intelligence platform for real-time suitability analysis, mapping, and regulatory compliance in Gujarat.
           </p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '32px' }}>
-            {['🗺️ Interactive Maps', '📍 Location Analysis', '🤖 AI Insights', '📊 Real-time Data'].map(f => (
+            {['️ GIDC Proximities', ' MCDA Siting Scoring', ' GeoChat AI Guidance', ' Spatial Analytics'].map(f => (
               <div key={f} style={{
-                padding: '7px 14px', borderRadius: 'var(--r-full)',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)',
-                fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500',
+                padding: '6px 14px', borderRadius: 'var(--r-full)',
+                background: 'var(--c-surface)', border: '1px solid var(--border-subtle)',
+                fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600',
+                boxShadow: 'var(--shadow-xs)'
               }}>{f}</div>
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="hide-mobile" style={{
-        width: '1px',
-        background: 'linear-gradient(to bottom, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent)',
-        alignSelf: 'stretch',
-        margin: '60px 0',
-      }}/>
+        {/* Divider */}
+        <div style={{
+          width: '1px',
+          background: 'linear-gradient(to bottom, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent)',
+          alignSelf: 'stretch',
+        }} className="hidden md:block"/>
 
-      <div style={{
-        width: 'clamp(320px, 45%, 520px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'clamp(24px, 5vw, 60px) clamp(20px, 5vw, 60px)',
-        position: 'relative',
-        zIndex: 2,
-        flexShrink: 0,
-      }}
-      className="form-container"
-      >
-        <div style={{ width: '100%', maxWidth: '400px' }}>
-
-          <div className="show-mobile" style={{
-            display: 'none', flexDirection: 'column', alignItems: 'center',
-            marginBottom: '32px', textAlign: 'center',
+        {/* Form Column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          maxWidth: '440px',
+        }}>
+          {/* Mobile brand logo */}
+          <div style={{
+            flexDirection: 'column', alignItems: 'center',
+            marginBottom: '24px', textAlign: 'center',
             ...tf,
             opacity: step >= 1 ? 1 : 0,
-            transform: step >= 1 ? 'none' : 'translateY(16px)',
-          }}>
-            <div style={{ marginBottom: '12px' }}><GlobeIcon size={56} /></div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: '800', letterSpacing: '-0.03em' }}>
+            transform: step >= 1 ? 'none' : 'translateY(12px)',
+          }} className="flex md:hidden">
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '14px',
+              background: 'var(--c-primary-50)',
+              border: '1px solid var(--c-primary-200)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: '12px',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+                <circle cx="24" cy="24" r="20" stroke="url(#mobGl)" strokeWidth="2.5"/>
+                <ellipse cx="24" cy="24" rx="9" ry="20" stroke="url(#mobGl)" strokeWidth="2"/>
+                <defs><linearGradient id="mobGl" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="var(--c-primary-500)"/><stop offset="100%" stopColor="var(--c-primary-700)"/></linearGradient></defs>
+              </svg>
+            </div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.03em' }}>
               <span className="gradient-text">GeoNexus AI</span>
             </h1>
           </div>
 
-          <div style={{ marginBottom: '36px', ...tf, opacity: step >= 1 ? 1 : 0, transform: step >= 1 ? 'none' : 'translateY(20px)' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px,3vw,30px)', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '8px' }}>
-              Welcome back 👋
+          <div style={{ marginBottom: '24px', ...tf, opacity: step >= 1 ? 1 : 0, transform: step >= 1 ? 'none' : 'translateY(12px)' }} className="text-center md:text-left">
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '6px' }}>
+              Welcome back
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Sign in to your GeoNexus AI account</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Sign in to your account</p>
           </div>
 
           <div
             key={shakeKey}
-            className={`glass-bright ${error && shakeKey ? 'anim-shake' : ''}`}
+            className={`form-card ${error && shakeKey ? 'anim-shake' : ''}`}
             style={{
-              borderRadius: 'var(--r-xl)',
-              overflow: 'hidden',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.07)',
               ...tf,
               opacity: step >= 2 ? 1 : 0,
-              transform: step >= 2 ? 'none' : 'translateY(24px)',
+              transform: step >= 2 ? 'none' : 'translateY(16px)',
+              padding: '28px clamp(16px, 5vw, 32px)'
             }}
           >
-            <div style={{
-              height: '3px',
-              background: 'linear-gradient(90deg, #22D3EE, #3B82F6, #8B5CF6, #22D3EE)',
-              backgroundSize: '300% 100%',
-              animation: 'gradient-flow 4s ease infinite',
-            }} />
+            {error && (
+              <div className="anim-fadeDown" style={{
+                display: 'flex', alignItems: 'flex-start', gap: '10px',
+                padding: '12px 14px', borderRadius: 'var(--r-md)',
+                background: 'var(--c-error-light)', border: '1px solid var(--c-error)',
+                color: 'var(--text-primary)', fontSize: '13px', marginBottom: '20px',
+              }}>
+                <AlertIcon />
+                <span>{error}</span>
+              </div>
+            )}
 
-            <div style={{ padding: 'clamp(24px,5vw,36px)' }}>
-
-              {error && (
-                <div className="anim-fadeDown" style={{
-                  display: 'flex', alignItems: 'flex-start', gap: '10px',
-                  padding: '12px 14px', borderRadius: 'var(--r-md)',
-                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)',
-                  color: '#FCA5A5', fontSize: '13px', marginBottom: '20px',
-                }}>
-                  <AlertIcon />
-                  <span>{error}</span>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div className="form-group">
+                <label className="form-label">Username or Email</label>
+                <div className="form-input-wrapper">
+                  <span className="form-input-icon">
+                    <UserIcon />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Your username or email"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    className="form-input-field"
+                    required
+                    autoComplete="username"
+                  />
                 </div>
-              )}
-
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Username or Email</label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                      <UserIcon />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Your username or email"
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      className="input-field"
-                      style={{ paddingLeft: '40px' }}
-                      required
-                      autoComplete="username"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Password</label>
-                    <Link to="/forgot-password" style={{ fontSize: '12px', fontWeight: '600', color: error ? '#EF4444' : 'var(--cyan)', textDecoration: 'none', transition: 'color 0.2s' }}>Forgot Password?</Link>
-                  </div>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                      <LockIcon />
-                    </span>
-                    <input
-                      type={showPass ? 'text' : 'password'}
-                      placeholder="Your password"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="input-field"
-                      style={{ paddingLeft: '40px', paddingRight: '44px' }}
-                      required
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(v => !v)}
-                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '4px', borderRadius: '6px', transition: 'color 0.2s' }}
-                    >
-                      <EyeIcon open={showPass} />
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  ref={btnRef}
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary"
-                  onClick={handleRipple}
-                  style={{ width: '100%', padding: '15px', fontSize: '15px', marginTop: '4px' }}
-                >
-                  {loading ? <><LoadSpinner /> Signing in…</> : <><SignInIcon /> Sign In</>}
-                </button>
-              </form>
-
-              <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
-                <span style={{ padding: '0 12px', fontSize: '12px', color: 'var(--text-muted)' }}>or</span>
-                <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <GoogleLogin
-                  theme="dark"
-                  shape="rectangular"
-                  width="328"
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google Sign-In failed')}
-                  useOneTap
-                />
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="form-label">Password</label>
+                  <Link to="/forgot-password" style={{ fontSize: '12.5px', fontWeight: '700', color: 'var(--c-primary-600)', textDecoration: 'none' }}>
+                    Forgot Password?
+                  </Link>
+                </div>
+                <div className="form-input-wrapper">
+                  <span className="form-input-icon">
+                    <LockIcon />
+                  </span>
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    placeholder="Your password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="form-input-field"
+                    style={{ paddingRight: '44px' }}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(v => !v)}
+                    className="form-password-toggle"
+                  >
+                    <EyeIcon open={showPass} />
+                  </button>
+                </div>
               </div>
 
+              <button
+                ref={btnRef}
+                type="submit"
+                disabled={loading}
+                className="btn-primary"
+                onClick={handleRipple}
+                style={{ width: '100%', padding: '14px', fontSize: '14px', marginTop: '6px' }}
+              >
+                {loading ? <><LoadSpinner /> Signing in…</> : <><SignInIcon /> Sign In</>}
+              </button>
+            </form>
+
+            <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}/>
+              <span style={{ padding: '0 12px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>or</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}/>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <GoogleLogin
+                theme="outline"
+                shape="rectangular"
+                width="100%"
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Sign-In failed')}
+                useOneTap
+              />
             </div>
           </div>
 
           <p style={{
-            textAlign: 'center', marginTop: '24px', fontSize: '13px', color: 'var(--text-muted)',
+            textAlign: 'center', marginTop: '24px', fontSize: '13.5px', color: 'var(--text-muted)',
             ...tf, opacity: step >= 3 ? 1 : 0, transform: step >= 3 ? 'none' : 'translateY(12px)',
           }}>
             Don't have an account?{' '}
-            <Link to="/register" style={{ color: 'var(--cyan)', fontWeight: '700', textDecoration: 'none' }}>
+            <Link to="/register" style={{ color: 'var(--c-primary-600)', fontWeight: '700', textDecoration: 'none' }}>
               Create one →
             </Link>
           </p>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 639px) {
-          .form-container { width: 100% !important; }
-          .show-mobile { display: flex !important; }
-        }
-        @media (min-width: 640px) {
-          .show-mobile { display: none !important; }
-          .hide-mobile { display: flex !important; }
-        }
-      `}</style>
-    </div>
+    </Layout>
   );
 }

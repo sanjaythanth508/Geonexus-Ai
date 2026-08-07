@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 import html2pdf from 'html2pdf.js';
-import LocationCompareModal from '../components/Analysis/LocationCompareModal';
 import { findSuggestion } from '../api/analysis';
+import LocationCompareModal from '../components/Analysis/LocationCompareModal';
+import Layout from '../components/Common/Layout';
 
 /* ── Icons ── */
-const ArrowLeftIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
-const DownloadIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+const ArrowLeftIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+const DownloadIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 const ShieldIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
-const CheckCircleIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>;
+const CheckCircleIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 
 function LoadSpinner() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
         style={{ animation: 'spin 0.75s linear infinite', transformOrigin: 'center' }}/>
     </svg>
@@ -21,103 +21,92 @@ function LoadSpinner() {
 }
 
 export default function PredictionReport() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = useLocation();
+
+  const [result] = useState(() => { try { return JSON.parse(sessionStorage.getItem('last_prediction_report') || 'null'); } catch { return null; } });
+  
   const [downloading, setDownloading] = useState(false);
-  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [reportDate] = useState(() => new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
 
   const [searchingSuggestion, setSearchingSuggestion] = useState(false);
   const [searchedSuggestion, setSearchedSuggestion] = useState(false);
-  
-  const [result] = useState(() => {
-    return location.state?.result || JSON.parse(sessionStorage.getItem('last_prediction_report') || 'null');
-  });
+  const [suggestion, setSuggestion] = useState(() => { try { return JSON.parse(sessionStorage.getItem('better_site_suggestion') || 'null'); } catch { return null; } });
 
-  const [suggestion, setSuggestion] = useState(() => {
-    const cached = result?.better_site_suggestion || JSON.parse(sessionStorage.getItem('better_site_suggestion') || 'null');
-    if (cached) setSearchedSuggestion(true);
-    return cached;
-  });
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   useEffect(() => {
-    if (location.state?.result) {
-      sessionStorage.setItem('last_prediction_report', JSON.stringify(location.state.result));
-    }
-  }, [location.state]);
+    if (suggestion) setSearchedSuggestion(true);
+  }, [suggestion]);
 
   if (!result) {
     return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)',
-        color: 'var(--text-primary)', padding: '24px', textAlign: 'center'
-      }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>
-          No Analysis Report Loaded
-        </h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px', maxWidth: '400px' }}>
-          Please run a geospatial suitability prediction first.
-        </p>
-        <button onClick={() => navigate('/home')} className="btn-primary">
-          <ArrowLeftIcon /> Return to Home
-        </button>
-      </div>
+      <Layout>
+        <div style={{
+          minHeight: '60vh', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '16px',
+          color: 'var(--text-primary)', textAlign: 'center', padding: '24px'
+        }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '20px' }}>No Suitability Result Found</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '380px' }}>
+            Please select a coordinate location and complete the suitability scoring audit first.
+          </p>
+          <button onClick={() => navigate('/analysis')} className="btn-primary" style={{ padding: '12px 24px' }}>
+            Back to Map view
+          </button>
+        </div>
+      </Layout>
     );
   }
 
   const {
-    district = "Gujarat Region",
-    industry_type = "Industrial Site",
-    mcda_final_suitability_score = 0,
-    lightgbm_predicted_label = "Moderate",
-    highway_corridor_bonus = 0,
-    river_reliability_bonus = 0,
-    nearest_highway_ref = "NH-8 Corridor",
-    nearest_river_name = "Narmada Basin",
-    criteria_breakdown = {},
     latitude,
     longitude,
+    industry_type,
+    district,
+    mcda_final_suitability_score,
+    nearest_highway_ref,
+    highway_corridor_bonus,
+    nearest_river_name,
+    river_reliability_bonus,
+    criteria_breakdown
   } = result;
 
-  const scoreNum = Number(mcda_final_suitability_score) || 0;
-  
-  // Single-word classification
-  let categoryLabel = "Moderate";
-  let badgeColor = "#22D3EE"; // Cyan
-  let badgeBg = "rgba(34, 211, 238, 0.12)";
-  let badgeBorder = "rgba(34, 211, 238, 0.3)";
+  const scoreNum = Number(mcda_final_suitability_score || 0);
+  let badgeColor = 'var(--c-warning)', badgeBg = 'var(--c-warning-light)', badgeBorder = 'var(--border-subtle)', categoryLabel = 'Moderate';
+  if (scoreNum >= 80) { badgeColor = 'var(--c-success)'; badgeBg = 'var(--c-success-light)'; categoryLabel = 'Excellent'; }
+  else if (scoreNum >= 60) { badgeColor = 'var(--c-info)'; badgeBg = 'var(--c-info-light)'; categoryLabel = 'Good'; }
+  else if (scoreNum >= 40) { badgeColor = 'var(--c-warning)'; badgeBg = 'var(--c-warning-light)'; categoryLabel = 'Moderate'; }
+  else { badgeColor = 'var(--c-error)'; badgeBg = 'var(--c-error-light)'; categoryLabel = 'Poor'; }
 
-  if (scoreNum >= 75 || lightgbm_predicted_label.toLowerCase().includes('high') || lightgbm_predicted_label.toLowerCase().includes('excellent')) {
-    categoryLabel = "Excellent";
-    badgeColor = "#10B981"; // Emerald
-    badgeBg = "rgba(16, 185, 129, 0.12)";
-    badgeBorder = "rgba(16, 185, 129, 0.3)";
-  } else if (scoreNum >= 50 || lightgbm_predicted_label.toLowerCase().includes('moderate') || lightgbm_predicted_label.toLowerCase().includes('good')) {
-    categoryLabel = "Good";
-    badgeColor = "#22D3EE"; // Cyan
-    badgeBg = "rgba(34, 211, 238, 0.12)";
-    badgeBorder = "rgba(34, 211, 238, 0.3)";
-  } else {
-    categoryLabel = "Poor";
-    badgeColor = "#EF4444"; // Red
-    badgeBg = "rgba(239, 68, 68, 0.12)";
-    badgeBorder = "rgba(239, 68, 68, 0.3)";
-  }
+  const handlePdfExport = () => {
+    const element = document.getElementById('simple-clean-pdf-template');
+    if (!element) return;
+    setDownloading(true);
 
-  const sortedCriteria = Object.entries(criteria_breakdown || {})
-    .sort((a, b) => (b[1]?.weight || 0) - (a[1]?.weight || 0));
+    const filename = `GeoNexus_Suitability_Report_${industry_type.replace(/\s+/g, '_')}_${district.replace(/\s+/g, '_')}.pdf`;
+    const opt = {
+      margin: 15,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2.5, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().from(element).set(opt).save()
+      .then(() => setDownloading(false))
+      .catch(() => setDownloading(false));
+  };
 
   const handleFindSuggestion = async () => {
-    if (!result || searchingSuggestion) return;
+    if (searchingSuggestion) return;
     setSearchingSuggestion(true);
     try {
       const res = await findSuggestion({
-        latitude,
-        longitude,
+        latitude: latitude,
+        longitude: longitude,
         industryType: industry_type,
-        currentScore: scoreNum
+        currentScore: scoreNum,
       });
       setSuggestion(res || null);
       if (res) {
@@ -127,487 +116,398 @@ export default function PredictionReport() {
       }
       setSearchedSuggestion(true);
     } catch (e) {
-      console.error("Suggestion search error:", e);
+      console.error(e);
     } finally {
       setSearchingSuggestion(false);
     }
   };
 
-  const reportDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
-
-  const handleDownloadPdfFile = () => {
-    const element = document.getElementById('simple-clean-pdf-template');
-    if (!element) return;
-
-    setDownloading(true);
-
-    const opt = {
-      margin:       [10, 10, 10, 10],
-      filename:     `GeoNexus_Report_${district.replace(/\s+/g, '_')}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-      setDownloading(false);
-    }).catch((err) => {
-      console.error("PDF download failed:", err);
-      setDownloading(false);
-    });
-  };
-
-  const handlePdfExport = async () => {
-    setDownloading(true);
-    try {
-      const res = await api.post('reports/export-pdf/', {
-        latitude,
-        longitude,
-        industry_type,
-        score: scoreNum,
-        district,
-        classification: categoryLabel,
-        criteria_breakdown
-      }, { responseType: 'blob' });
-
-      const blob = new Blob([res.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `GeoNexus_Audit_${district.replace(/\s+/g, '_')}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.warn("Server PDF API unavailable, building via client canvas:", err);
-      handleDownloadPdfFile();
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const sortedCriteria = criteria_breakdown ? Object.entries(criteria_breakdown).sort((a, b) => (b[1].score_100 || 0) - (a[1].score_100 || 0)) : [];
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)',
-      display: 'flex', flexDirection: 'column'
-    }}>
-      {/* ── Action Header ── */}
-      <header className="no-print" style={{
-        height: 'var(--nav-h)', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 clamp(16px, 4vw, 40px)', background: 'rgba(10, 14, 26, 0.85)',
-        backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-subtle)',
-        position: 'sticky', top: 0, zIndex: 100,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => {
-              if (location.state?.from === '/analysis/suggestion') {
-                navigate('/analysis/suggestion');
-              } else {
-                navigate('/analysis/result');
-              }
-            }}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '7px 14px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              color: 'var(--text-secondary)', fontWeight: '600', fontSize: '13px',
-              cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'; e.currentTarget.style.color = 'var(--cyan)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-          >
-            <ArrowLeftIcon /> {location.state?.from === '/analysis/suggestion' ? 'Back to Suggestion' : 'Back to Analysis'}
-          </button>
-          <button
-            onClick={() => navigate('/home')}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '7px 14px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--text-muted)', fontWeight: '600', fontSize: '13px',
-              cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s',
-            }}
-          >
-            🏠 Home
-          </button>
-        </div>
-
-        <button
-          onClick={handlePdfExport}
-          disabled={downloading}
-          className="btn-primary"
-          style={{ padding: '8px 22px', fontSize: '13.5px', gap: '8px', opacity: downloading ? 0.7 : 1 }}
-        >
-          {downloading ? <><LoadSpinner /> Generating PDF...</> : <><DownloadIcon /> Download PDF Report</>}
-        </button>
-      </header>
-
-      {/* ── HIGHLY DESIGNED WEB VIEW PAGE ── */}
-      <main style={{
-        flex: 1, maxWidth: '900px', width: '100%', margin: '0 auto',
-        padding: 'clamp(20px, 4vw, 40px) clamp(16px, 4vw, 24px)',
-      }}>
-
-        {/* Premium Web Display Card */}
-        <div className="glass-bright" style={{
-          borderRadius: 'var(--r-xl)', border: '1px solid var(--border-default)',
-          boxShadow: 'var(--shadow-xl)', overflow: 'hidden', padding: 'clamp(24px, 5vw, 48px)',
-          background: 'var(--bg-surface)'
+    <Layout hideNav={true}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        
+        {/* Sub-header Navigation */}
+        <header className="no-print" style={{
+          height: 'var(--nav-h)', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 clamp(16px, 4vw, 40px)', background: 'var(--c-surface)',
+          borderBottom: '1px solid var(--border-subtle)',
+          position: 'sticky', top: 0, zIndex: 100,
         }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => {
+                if (location.state?.from === '/analysis/suggestion') {
+                  navigate('/analysis/suggestion');
+                } else {
+                  navigate('/analysis/result');
+                }
+              }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                padding: '8px 16px', borderRadius: '12px',
+                background: 'var(--c-surface)', border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)', fontWeight: '700', fontSize: '13px',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--c-primary-400)'; e.currentTarget.style.color = 'var(--c-primary-600)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+            >
+              <ArrowLeftIcon /> Back
+            </button>
+            <button
+              onClick={() => navigate('/home')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '12px',
+                background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)',
+                color: 'var(--text-secondary)', fontWeight: '700', fontSize: '13px',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)',
+              }}
+            >
+               Home
+            </button>
+          </div>
 
-          {/* Web Header */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-            borderBottom: '2px solid var(--border-subtle)', paddingBottom: '24px', marginBottom: '32px'
+          <button
+            onClick={handlePdfExport}
+            disabled={downloading}
+            className="btn-primary"
+            style={{ padding: '8px 20px', fontSize: '13px', gap: '6px', opacity: downloading ? 0.7 : 1 }}
+          >
+            {downloading ? <><LoadSpinner /> Exporting...</> : <><DownloadIcon /> Download Report</>}
+          </button>
+        </header>
+
+        {/* Audit Web View */}
+        <main style={{
+          flex: 1, maxWidth: '900px', width: '100%', margin: '0 auto',
+          padding: 'clamp(24px, 4vw, 40px) clamp(16px, 4vw, 24px)',
+        }}>
+          
+          <div className="card" style={{
+            borderRadius: 'var(--r-xl)', padding: 'clamp(24px, 5vw, 40px)'
           }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '10px',
-                  background: 'var(--grad-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <ShieldIcon />
-                </div>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: '900', fontSize: '26px', letterSpacing: '-0.03em' }}>
-                  GeoNexus <span className="gradient-text">AI</span>
-                </span>
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Geospatial Intelligence & Site Suitability Audit
-              </p>
-            </div>
-
-            <div style={{ textAlign: 'right' }}>
-              <div className="badge badge-cyan" style={{ marginBottom: '6px' }}>Audit ID: #GX-{Math.floor(100000 + Math.random() * 900000)}</div>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Date: {reportDate}</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>Operator: {user?.profile?.full_name || user?.username || 'Administrator'}</p>
-            </div>
-          </div>
-
-          {/* Executive Overview Banner */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px',
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--r-lg)', padding: '24px', marginBottom: '32px'
-          }} className="report-grid">
             
-            <div>
-              <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.08em', color: 'var(--cyan)', textTransform: 'uppercase' }}>
-                Audited Location
-              </span>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: '900', margin: '4px 0 10px', color: 'var(--text-primary)' }}>
-                {district}
-              </h1>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13.5px', color: 'var(--text-secondary)' }}>
-                <div><strong>Industry Sector:</strong> <span style={{ color: 'var(--cyan)', fontWeight: '700' }}>{industry_type}</span></div>
-                {latitude != null && longitude != null && (
-                  <div><strong>Map Coordinates:</strong> <code>{latitude.toFixed(5)}° N, {longitude.toFixed(5)}° E</code></div>
-                )}
-              </div>
-            </div>
-
+            {/* Header info */}
             <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              background: badgeBg, border: `1px solid ${badgeBorder}`, borderRadius: 'var(--r-md)', padding: '20px'
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+              borderBottom: '1px solid var(--border-subtle)', paddingBottom: '24px', marginBottom: '28px',
+              flexWrap: 'wrap', gap: '16px'
             }}>
-              <span style={{ fontSize: '11px', fontWeight: '800', color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Suitability Score
-              </span>
-              <div style={{ fontSize: '44px', fontWeight: '900', color: badgeColor, fontFamily: 'var(--font-display)', lineHeight: 1, margin: '6px 0' }}>
-                {scoreNum.toFixed(1)} <span style={{ fontSize: '18px', fontWeight: '600', opacity: 0.8 }}>/100</span>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <div style={{
+                    width: '36px', height: '36px', borderRadius: '10px',
+                    background: 'var(--c-primary-100)', color: 'var(--c-primary-700)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    <ShieldIcon />
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: '900', fontSize: '24px', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                    GeoNexus <span style={{ color: 'var(--c-primary-600)' }}>AI</span>
+                  </span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                  Geospatial Intelligence & Site Suitability Audit
+                </p>
               </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <div className="badge" style={{ background: 'var(--c-primary-50)', color: 'var(--c-primary-700)', marginBottom: '6px' }}>Audit ID: #GX-{Math.floor(100000 + Math.random() * 900000)}</div>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>Date: {reportDate}</p>
+              </div>
+            </div>
+
+            {/* Overview section */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px',
+              background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--r-lg)', padding: '20px', marginBottom: '32px'
+            }}>
+              <div>
+                <span style={{ fontSize: '10.5px', fontWeight: '800', letterSpacing: '0.08em', color: 'var(--c-primary-600)', textTransform: 'uppercase' }}>
+                  Audited Siting Location
+                </span>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: '900', margin: '4px 0 10px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  {district}
+                </h1>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  <div><strong>Industry Sector:</strong> <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{industry_type}</span></div>
+                  {latitude != null && longitude != null && (
+                    <div><strong>Map Coordinates:</strong> <code style={{fontFamily: 'var(--font-mono)'}}>{latitude.toFixed(5)}° N, {longitude.toFixed(5)}° E</code></div>
+                  )}
+                </div>
+              </div>
+
               <div style={{
-                padding: '5px 18px', borderRadius: 'var(--r-full)',
-                background: badgeColor, color: '#000', fontWeight: '800', fontSize: '13px'
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                background: badgeBg, border: `1px solid ${badgeBorder}`, borderRadius: 'var(--r-md)', padding: '16px'
               }}>
-                {categoryLabel}
+                <span style={{ fontSize: '10.5px', fontWeight: '800', color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Suitability Score
+                </span>
+                <div style={{ fontSize: '40px', fontWeight: '950', color: badgeColor, fontFamily: 'var(--font-display)', lineHeight: 1, margin: '6px 0 4px', letterSpacing: '-0.02em' }}>
+                  {scoreNum.toFixed(1)} <span style={{ fontSize: '16px', fontWeight: '600', opacity: 0.8 }}>/100</span>
+                </div>
+                <div style={{
+                  padding: '4px 14px', borderRadius: 'var(--r-full)',
+                  background: badgeColor, color: 'var(--c-surface)', fontWeight: '850', fontSize: '12px'
+                }}>
+                  {categoryLabel}
+                </div>
               </div>
             </div>
 
-          </div>
-
-          {/* Infrastructure Corridors */}
-          <div style={{ marginBottom: '32px' }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: '800', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircleIcon /> Spatial Logistics & Water Infrastructure
-            </h3>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="report-grid">
-              <div style={{ padding: '16px', borderRadius: 'var(--r-md)', background: 'rgba(34,211,238,0.04)', border: '1px solid rgba(34,211,238,0.15)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Highway Logistics Link</span>
-                <p style={{ fontSize: '15px', fontWeight: '700', margin: '4px 0', color: 'var(--text-primary)' }}>{nearest_highway_ref || "NH Corridor"}</p>
-                <p style={{ fontSize: '12.5px', color: 'var(--emerald)', fontWeight: '700' }}>Corridor Logistics Bonus: +{(highway_corridor_bonus * 100).toFixed(0)}%</p>
-              </div>
-
-              <div style={{ padding: '16px', borderRadius: 'var(--r-md)', background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.15)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Water Network Access</span>
-                <p style={{ fontSize: '15px', fontWeight: '700', margin: '4px 0', color: 'var(--text-primary)' }}>{nearest_river_name || "Regional River Basin"}</p>
-                <p style={{ fontSize: '12.5px', color: 'var(--purple)', fontWeight: '700' }}>Water Reliability Index: {(river_reliability_bonus * 100).toFixed(0)}%</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Full Multi-Criteria Table */}
-          {sortedCriteria.length > 0 && (
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: '800', marginBottom: '14px' }}>
-                ⚖️ Multi-Criteria Evaluation Matrix (MCDA Breakdown)
+            {/* Infrastructure Linkages */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: '850', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+                <CheckCircleIcon /> Spatial Logistics & Water Infrastructure
               </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{ padding: '16px', borderRadius: 'var(--r-md)', background: 'var(--c-primary-50)', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Highway Logistics Link</span>
+                  <p style={{ fontSize: '14.5px', fontWeight: '750', margin: '4px 0', color: 'var(--text-primary)' }}>{nearest_highway_ref || "NH Corridor"}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--c-primary-700)', fontWeight: '700', margin: 0 }}>Corridor Logistics Bonus: +{(highway_corridor_bonus * 100).toFixed(0)}%</p>
+                </div>
+                <div style={{ padding: '16px', borderRadius: 'var(--r-md)', background: 'var(--c-accent-50)', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Water Network Access</span>
+                  <p style={{ fontSize: '14.5px', fontWeight: '750', margin: '4px 0', color: 'var(--text-primary)' }}>{nearest_river_name || "Regional River Basin"}</p>
+                  <p style={{ fontSize: '12px', color: 'var(--c-accent-700)', fontWeight: '700', margin: 0 }}>Water Reliability Index: {(river_reliability_bonus * 100).toFixed(0)}%</p>
+                </div>
+              </div>
+            </div>
 
-              <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+            {/* Criteria Breakdown */}
+            {sortedCriteria.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: '850', marginBottom: '14px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+                  ️ Multi-Criteria Evaluation Matrix (MCDA Breakdown)
+                </h3>
+                <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }} className="responsive-table">
+                    <thead>
+                      <tr style={{ background: 'var(--c-surface-alt)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
+                        <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)' }}>Evaluation Metric</th>
+                        <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)', textAlign: 'right' }}>Calculated Score</th>
+                        <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)', textAlign: 'right' }}>Impact Weight</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedCriteria.map(([crit, v], idx) => (
+                        <tr key={crit} style={{ borderBottom: idx < sortedCriteria.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                          <td style={{ padding: '10px 14px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                            {crit.replace(/_/g, ' ')}
+                          </td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '750', color: 'var(--c-primary-600)' }}>
+                            {(v?.score_100 || 0).toFixed(0)} / 100
+                          </td>
+                          <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-muted)' }}>
+                            {((v?.weight || 0) * 100).toFixed(0)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{
+              marginTop: '32px', paddingTop: '16px', borderTop: '1px dashed var(--border-subtle)',
+              display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)'
+            }}>
+              <span>GeoNexus AI Geospatial Platform</span>
+              <span>Confidential Siting Audit Summary</span>
+            </div>
+
+            {/* Suggestion block */}
+            {!searchedSuggestion && !searchingSuggestion && (
+              <div style={{
+                marginTop: '28px', padding: '18px 20px', borderRadius: '16px',
+                background: 'var(--c-primary-50)', border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ fontSize: '11.5px', fontWeight: '800', color: 'var(--c-primary-700)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                     Location Optimization Engine
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
+                    Scan GIDC industrial corridors and substation proximity inside 20 km for an optimized coordinate location.
+                  </div>
+                </div>
+                  <button
+                  onClick={handleFindSuggestion}
+                  className="btn-primary"
+                  style={{ padding: '9px 18px', fontSize: '12.5px', whiteSpace: 'nowrap' }}
+                >
+                  💡 Suggest Nearest Better Location (20km)
+                </button>
+              </div>
+            )}
+
+            {searchingSuggestion && (
+              <div style={{
+                marginTop: '28px', padding: '18px 20px', borderRadius: '16px',
+                background: 'var(--c-primary-50)', border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                color: 'var(--c-primary-700)', fontWeight: '750', fontSize: '13px'
+              }}>
+                🔄 Searching GIDC industrial estates & 4-directional gradient within 20 km...
+              </div>
+            )}
+
+            {searchedSuggestion && suggestion && suggestion.mcda_final_suitability_score && (
+              <div style={{
+                marginTop: '28px', padding: '18px 20px', borderRadius: '16px',
+                background: 'var(--c-success-light)', border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
+              }}>
+                <div>
+                  <div style={{ fontSize: '11.5px', fontWeight: '800', color: 'var(--c-success)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                     Optimized Siting Identified
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
+                    Alternative location ({suggestion.district || 'Gujarat'}) offers a higher suitability score of <b style={{color: 'var(--text-primary)'}}>{Number(suggestion.mcda_final_suitability_score).toFixed(1)}/100</b>.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => navigate('/analysis/suggestion')}
+                    className="btn-primary"
+                    style={{ padding: '8px 16px', fontSize: '12.5px', background: 'var(--c-success)', border: 'none', color: 'var(--c-surface)' }}
+                  >
+                    💡 View Suggested Location Report
+                  </button>
+                  <button
+                    onClick={() => setShowCompareModal(true)}
+                    className="btn-ghost"
+                    style={{ padding: '8px 16px', fontSize: '12.5px', color: 'var(--c-primary-600)', borderColor: 'var(--border-default)', background: 'var(--c-surface)' }}
+                  >
+                    ⚖️ Compare Both Locations
+                  </button>
+                  <button
+                    onClick={() => navigate('/analysis/suggestion-map')}
+                    className="btn-ghost"
+                    style={{ padding: '8px 16px', fontSize: '12.5px', color: 'var(--c-primary-600)', borderColor: 'var(--border-default)', background: 'var(--c-surface)' }}
+                  >
+                    🗺️ View in Map
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {searchedSuggestion && (!suggestion || !suggestion.mcda_final_suitability_score) && (
+              <div style={{
+                marginTop: '28px', padding: '18px 20px', borderRadius: '16px',
+                background: 'var(--c-surface)', border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '750', color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+                     🌟 Optimal Regional Location Confirmed
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '400', marginTop: '2px' }}>
+                    This selected location is already the best site for your facility within 20 km. No higher-scoring site was found nearby.
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+          </div>
+        </main>
+
+        {showCompareModal && suggestion && (
+          <LocationCompareModal
+            isOpen={showCompareModal}
+            onClose={() => setShowCompareModal(false)}
+            selectedData={result}
+            suggestionData={suggestion}
+            onViewMap={() => navigate('/analysis/suggestion-map')}
+          />
+        )}
+
+        {/* ── HIDDEN CLEAN WHITE PRINTING TEMPLATE ── */}
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <div id="simple-clean-pdf-template" style={{
+            width: '700px', background: 'var(--text-primary)', color: 'var(--border-default)', padding: '32px 36px', fontFamily: 'Arial, sans-serif'
+          }}>
+            <div style={{ borderBottom: '2px solid var(--border-default)', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--border-default)', fontWeight: 'bold' }}>GeoNexus AI Report</h2>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--border-default)' }}>Land Suitability Evaluation Audit</p>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: '11px', color: 'var(--border-default)' }}>
+                <div>Date: {reportDate}</div>
+              </div>
+            </div>
+
+            <div style={{ background: 'var(--border-default)', border: '1px solid var(--border-default)', borderRadius: '6px', padding: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--border-default)', fontWeight: 'bold', textTransform: 'uppercase' }}>Target Siting Region</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--border-default)', margin: '2px 0' }}>{district}</div>
+                <div style={{ fontSize: '12px', color: 'var(--border-default)' }}>
+                  Sector: {industry_type} {latitude != null && `(${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E)`}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '10px', color: 'var(--border-default)', fontWeight: 'bold', textTransform: 'uppercase' }}>Suitability score</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--border-default)' }}>{scoreNum.toFixed(1)} / 100</div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--border-default)', textTransform: 'uppercase' }}>Key Infrastructure Corridors</h4>
+              <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '8px', background: 'var(--border-default)', border: '1px solid var(--border-default)', width: '50%' }}>
+                      <strong>Highway Link:</strong> {nearest_highway_ref || "NH Corridor"} (+{(highway_corridor_bonus * 100).toFixed(0)}%)
+                    </td>
+                    <td style={{ padding: '8px', background: 'var(--border-default)', border: '1px solid var(--border-default)', width: '50%' }}>
+                      <strong>Water Access:</strong> {nearest_river_name || "Regional River Basin"} ({(river_reliability_bonus * 100).toFixed(0)}%)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {sortedCriteria.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--border-default)', textTransform: 'uppercase' }}>Evaluation Metrics Breakdown</h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                   <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
-                      <th style={{ padding: '10px 14px', fontWeight: '700', color: 'var(--text-secondary)' }}>Evaluation Metric</th>
-                      <th style={{ padding: '10px 14px', fontWeight: '700', color: 'var(--text-secondary)', textAlign: 'right' }}>Calculated Score</th>
-                      <th style={{ padding: '10px 14px', fontWeight: '700', color: 'var(--text-secondary)', textAlign: 'right' }}>Impact Weight</th>
+                    <tr style={{ background: 'var(--border-default)', borderBottom: '1.5px solid var(--border-default)', textAlign: 'left' }}>
+                      <th style={{ padding: '6px 10px' }}>Metric Description</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'right' }}>Calculated Score</th>
+                      <th style={{ padding: '6px 10px', textAlign: 'right' }}>Impact Weight</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedCriteria.map(([crit, v], idx) => (
-                      <tr key={crit} style={{ borderBottom: idx < sortedCriteria.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
-                        <td style={{ padding: '10px 14px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'capitalize' }}>
-                          {crit.replace(/_/g, ' ')}
-                        </td>
-                        <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: 'var(--cyan)' }}>
-                          {(v?.score_100 || 0).toFixed(0)} / 100
-                        </td>
-                        <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-muted)' }}>
-                          {((v?.weight || 0) * 100).toFixed(0)}%
-                        </td>
+                      <tr key={crit} style={{ borderBottom: '1px solid var(--border-default)', background: idx % 2 === 0 ? 'var(--text-primary)' : 'var(--border-default)' }}>
+                        <td style={{ padding: '6px 10px', textTransform: 'capitalize' }}>{crit.replace(/_/g, ' ')}</td>
+                        <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 'bold' }}>{(v?.score_100 || 0).toFixed(0)} / 100</td>
+                        <td style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--border-default)' }}>{((v?.weight || 0) * 100).toFixed(0)}%</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Web Footer */}
-          <div style={{
-            marginTop: '32px', paddingTop: '16px', borderTop: '1px dashed var(--border-subtle)',
-            display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)'
-          }}>
-            <span>GeoNexus AI Geospatial Platform</span>
-            <span>Official Confidential Audit Report</span>
+            <div style={{ borderTop: '1px solid var(--border-default)', paddingTop: '8px', fontSize: '10px', color: 'var(--border-default)', display: 'flex', justifyContent: 'space-between' }}>
+              <span>GeoNexus AI Geospatial Siting Suite</span>
+              <span>Official Siting Audit Summary</span>
+            </div>
           </div>
-
-          {/* Navigation & Optimization Bottom Action Bar */}
-          {!searchedSuggestion && !searchingSuggestion && (
-            <div style={{
-              marginTop: '28px', padding: '20px', borderRadius: '16px',
-              background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
-            }}>
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  💡 Location Optimization Engine
-                </div>
-                <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
-                  Scan GIDC industrial estates and 4-directional gradient within 20 km for a higher-scoring site.
-                </div>
-              </div>
-
-              <button
-                onClick={handleFindSuggestion}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 24px',
-                  background: 'var(--grad-btn)', border: 'none', borderRadius: '12px',
-                  color: '#fff', fontWeight: '800', fontSize: '14px', cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(56,189,248,0.25)', fontFamily: 'var(--font-sans)'
-                }}
-              >
-                💡 Suggest Nearest Better Location (20km)
-              </button>
-            </div>
-          )}
-
-          {searchingSuggestion && (
-            <div style={{
-              marginTop: '28px', padding: '20px', borderRadius: '16px',
-              background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-              color: 'var(--cyan)', fontWeight: '700', fontSize: '14px'
-            }}>
-              <LoadSpinner /> Searching GIDC industrial estates & 4-directional gradient within 20 km...
-            </div>
-          )}
-
-          {searchedSuggestion && suggestion && suggestion.mcda_final_suitability_score && (
-            <div style={{
-              marginTop: '28px', padding: '20px', borderRadius: '16px',
-              background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
-            }}>
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  💡 Optimized Site Available
-                </div>
-                <div style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
-                  Nearby location ({suggestion.district || 'Gujarat'}) offers a higher suitability score of <b>{Number(suggestion.mcda_final_suitability_score).toFixed(1)}/100</b>.
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => navigate('/analysis/suggestion')}
-                  style={{
-                    padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700',
-                    background: '#10B981', border: 'none', color: '#fff', cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(16,185,129,0.25)', fontFamily: 'var(--font-sans)'
-                  }}
-                >
-                  💡 View Suggested Location Report
-                </button>
-
-                <button
-                  onClick={() => setShowCompareModal(true)}
-                  style={{
-                    padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700',
-                    background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.3)',
-                    color: 'var(--cyan)', cursor: 'pointer', fontFamily: 'var(--font-sans)'
-                  }}
-                >
-                  ⚖️ Compare Both Locations
-                </button>
-
-                <button
-                  onClick={() => navigate('/analysis/suggestion-map')}
-                  style={{
-                    padding: '9px 18px', borderRadius: '10px', fontSize: '13px', fontWeight: '700',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-sans)'
-                  }}
-                >
-                  🗺️ View in Map
-                </button>
-              </div>
-            </div>
-          )}
-
-          {searchedSuggestion && (!suggestion || !suggestion.mcda_final_suitability_score) && (
-            <div style={{
-              marginTop: '28px', padding: '16px 20px', borderRadius: '16px',
-              background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.25)',
-              display: 'flex', alignItems: 'center', gap: '12px'
-            }}>
-              <span style={{ fontSize: '20px' }}>🌟</span>
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Optimal Regional Location
-                </div>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
-                  This selected location is already the best site for your <b>{industry_type}</b> facility within 20 km. No higher-scoring site was found nearby.
-                </div>
-              </div>
-            </div>
-          )}
-
         </div>
-      </main>
 
-      {showCompareModal && suggestion && (
-        <LocationCompareModal
-          isOpen={showCompareModal}
-          onClose={() => setShowCompareModal(false)}
-          selectedData={result}
-          suggestionData={suggestion}
-          onViewMap={() => navigate('/analysis/suggestion-map')}
-        />
-      )}
-
-      {/* ── HIDDEN CLEAN WHITE TEMPLATE FOR PDF DOWNLOAD ONLY ── */}
-      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
-        <div id="simple-clean-pdf-template" style={{
-          width: '750px',
-          background: '#FFFFFF',
-          color: '#1E293B',
-          padding: '30px 36px',
-          fontFamily: 'Arial, sans-serif'
-        }}>
-
-          {/* Simple PDF Header */}
-          <div style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '20px', color: '#0F172A', fontWeight: 'bold' }}>GeoNexus AI Report</h2>
-              <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748B' }}>Land Suitability Evaluation Audit</p>
-            </div>
-            <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748B' }}>
-              <div><strong>Date:</strong> {reportDate}</div>
-              <div><strong>Operator:</strong> {user?.profile?.full_name || user?.username || 'Administrator'}</div>
-            </div>
-          </div>
-
-          {/* Target Location Box */}
-          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 'bold', textTransform: 'uppercase' }}>Target Location</div>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A', margin: '2px 0' }}>{district}</div>
-              <div style={{ fontSize: '12px', color: '#475569' }}>
-                Sector: {industry_type} {latitude != null && `(${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E)`}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', color: '#64748B', fontWeight: 'bold', textTransform: 'uppercase' }}>Suitability Score</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0F172A' }}>{scoreNum.toFixed(1)} / 100</div>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', color: badgeColor }}>{categoryLabel}</div>
-            </div>
-          </div>
-
-          {/* Key Corridors */}
-          <div style={{ marginBottom: '20px' }}>
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#0F172A', textTransform: 'uppercase' }}>Key Infrastructure Corridors</h4>
-            <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '8px', background: '#F1F5F9', border: '1px solid #E2E8F0', width: '50%' }}>
-                    <strong>Highway Link:</strong> {nearest_highway_ref || "NH Corridor"} (+{(highway_corridor_bonus * 100).toFixed(0)}%)
-                  </td>
-                  <td style={{ padding: '8px', background: '#F1F5F9', border: '1px solid #E2E8F0', width: '50%' }}>
-                    <strong>Water Access:</strong> {nearest_river_name || "Regional River"} ({(river_reliability_bonus * 100).toFixed(0)}%)
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Criteria Table */}
-          {sortedCriteria.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#0F172A', textTransform: 'uppercase' }}>Evaluation Metrics Breakdown</h4>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                <thead>
-                  <tr style={{ background: '#F1F5F9', borderBottom: '1.5px solid #CBD5E1', textAlign: 'left' }}>
-                    <th style={{ padding: '6px 10px' }}>Metric</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'right' }}>Score</th>
-                    <th style={{ padding: '6px 10px', textAlign: 'right' }}>Weight</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedCriteria.map(([crit, v], idx) => (
-                    <tr key={crit} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
-                      <td style={{ padding: '6px 10px', textTransform: 'capitalize' }}>{crit.replace(/_/g, ' ')}</td>
-                      <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 'bold' }}>{(v?.score_100 || 0).toFixed(0)} / 100</td>
-                      <td style={{ padding: '6px 10px', textAlign: 'right', color: '#64748B' }}>{((v?.weight || 0) * 100).toFixed(0)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Simple PDF Footer */}
-          <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '8px', fontSize: '10px', color: '#94A3B8', display: 'flex', justifyContent: 'space-between' }}>
-            <span>GeoNexus AI Geospatial Platform</span>
-            <span>Confidential Audit Summary</span>
-          </div>
-
-        </div>
       </div>
-
-    </div>
+    </Layout>
   );
 }

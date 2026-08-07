@@ -29,8 +29,8 @@ export function renderMarkdownToReact(text) {
           overflowX: 'auto',
           margin: '14px 0',
           borderRadius: '10px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          background: 'rgba(15, 23, 42, 0.6)'
+          border: '1px solid var(--border-default)',
+          background: 'var(--c-surface)'
         }}>
           <table style={{
             width: '100%',
@@ -40,7 +40,7 @@ export function renderMarkdownToReact(text) {
             textAlign: 'left'
           }}>
             {tableHeader.length > 0 && (
-              <thead style={{ background: 'rgba(34, 211, 238, 0.1)', borderBottom: '1px solid rgba(34, 211, 238, 0.25)' }}>
+              <thead style={{ background: 'var(--c-surface-hover)', borderBottom: '1px solid var(--border-default)' }}>
                 <tr>
                   {tableHeader.map((th, thIdx) => (
                     <th
@@ -48,7 +48,7 @@ export function renderMarkdownToReact(text) {
                       style={{
                         padding: '10px 14px',
                         fontWeight: '700',
-                        color: '#22d3ee',
+                        color: 'var(--text-primary)',
                         textAlign: tableAlignments[thIdx] || 'left',
                         whiteSpace: 'nowrap'
                       }}
@@ -64,8 +64,8 @@ export function renderMarkdownToReact(text) {
                 <tr
                   key={`tr-${rIdx}`}
                   style={{
-                    borderBottom: rIdx === tableRows.length - 1 ? 'none' : '1px solid rgba(255, 255, 255, 0.05)',
-                    background: rIdx % 2 === 1 ? 'rgba(255, 255, 255, 0.02)' : 'transparent'
+                    borderBottom: rIdx === tableRows.length - 1 ? 'none' : '1px solid var(--border-subtle)',
+                    background: rIdx % 2 === 1 ? 'var(--c-surface-hover)' : 'transparent'
                   }}
                 >
                   {row.map((cell, cIdx) => (
@@ -97,15 +97,15 @@ export function renderMarkdownToReact(text) {
     if (codeLines.length > 0) {
       elements.push(
         <pre key={`code-${key}`} style={{
-          background: 'rgba(10, 15, 30, 0.95)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'var(--c-neutral-50)',
+          border: '1px solid var(--border-default)',
           padding: '12px 16px',
           borderRadius: '8px',
           overflowX: 'auto',
           margin: '12px 0',
           fontFamily: 'var(--font-mono, monospace)',
           fontSize: '13px',
-          color: '#38bdf8'
+          color: 'var(--text-primary)'
         }}>
           <code>{codeLines.join('\n')}</code>
         </pre>
@@ -169,7 +169,7 @@ export function renderMarkdownToReact(text) {
       elements.push(
         <hr key={`hr-${i}`} style={{
           border: 'none',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          borderTop: '1px solid var(--border-default)',
           margin: '16px 0'
         }} />
       );
@@ -199,7 +199,7 @@ export function renderMarkdownToReact(text) {
         <h4 key={`h4-${i}`} style={{
           fontSize: '14.5px',
           fontWeight: '600',
-          color: '#22d3ee',
+          color: 'var(--text-primary)',
           margin: '14px 0 6px'
         }}>
           {formatInlineMarkdown(trimmed.slice(5))}
@@ -226,8 +226,8 @@ export function renderMarkdownToReact(text) {
     if (trimmed.startsWith('> ')) {
       elements.push(
         <blockquote key={`bq-${i}`} style={{
-          borderLeft: '3px solid #22d3ee',
-          background: 'rgba(34, 211, 238, 0.06)',
+          borderLeft: '3px solid var(--c-primary-500)',
+          background: 'var(--c-surface-alt)',
           padding: '10px 14px',
           margin: '10px 0',
           borderRadius: '0 8px 8px 0',
@@ -254,7 +254,7 @@ export function renderMarkdownToReact(text) {
           fontSize: '14px',
           lineHeight: '1.6'
         }}>
-          <span style={{ color: '#22d3ee', marginTop: '2px' }}>•</span>
+          <span style={{ color: 'var(--text-primary)', marginTop: '2px' }}>•</span>
           <span style={{ flex: 1 }}>{formatInlineMarkdown(trimmed.slice(2))}</span>
         </div>
       );
@@ -273,7 +273,7 @@ export function renderMarkdownToReact(text) {
           fontSize: '14px',
           lineHeight: '1.6'
         }}>
-          <span style={{ color: '#38bdf8', fontWeight: '600', minWidth: '18px' }}>{numMatch[1]}.</span>
+          <span style={{ color: 'var(--text-primary)', fontWeight: '600', minWidth: '18px' }}>{numMatch[1]}.</span>
           <span style={{ flex: 1 }}>{formatInlineMarkdown(numMatch[2])}</span>
         </div>
       );
@@ -328,13 +328,13 @@ export function formatInlineMarkdown(text) {
     } else if (token.startsWith('`') && token.endsWith('`')) {
       parts.push(
         <code key={`c-${match.index}`} style={{
-          background: 'rgba(255, 255, 255, 0.08)',
-          color: '#22d3ee',
+          background: 'var(--c-neutral-100)',
+          color: 'var(--text-primary)',
           padding: '2px 6px',
           borderRadius: '4px',
           fontSize: '12.5px',
           fontFamily: 'var(--font-mono, monospace)',
-          border: '1px solid rgba(34, 211, 238, 0.2)'
+          border: '1px solid var(--border-subtle)'
         }}>
           {token.slice(1, -1)}
         </code>

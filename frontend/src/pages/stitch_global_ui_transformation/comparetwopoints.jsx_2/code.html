@@ -1,0 +1,394 @@
+<html><head></head><body>import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import MapComponent from '../components/Map/MapComponent';
+import { predictSite, getIndustryTypes, INDUSTRY_OPTIONS } from '../api/analysis';
+import { isInsideGujarat } from '../utils/locationValidation';
+import html2pdf from 'html2pdf.js';
+import Layout from '../components/Common/Layout';
+
+/* ── Utility helpers ── */
+function formatIndustry(val) {
+  return val.replace(/_/g, ' ').replace(/\b\w/g, c =&gt; c.toUpperCase());
+}
+
+/* ── StepBar ── */
+function StepBar({ steps, current }) {
+  return (
+    <div classname="flex gap-2 items-center mb-8 flex-wrap">
+      {steps.map((step, i) =&gt; (
+        <div ${i="" 'flex-1'="" 'flex-none'}`}="" -="" 1="" :="" <="" ?="" classname="{`flex" gap-2="" items-center="" key="{i}" steps.length="">
+<div ${="" 'text-on-surface-variant="" 'text-primary-fixed-dim="" 'text-secondary="" :="" <="" ?="" classname="{`flex" current="" font-bold'="" font-medium'="" font-sans="" font-semibold'="" gap-2="" i="" items-center="" text-sm="" whitespace-nowrap="" }`}="">
+<div ${="" 'bg-secondary="" 'bg-secondary-fixed-dim="" 'bg-surface-container="" 20="" 50="" :="" <="" ?="" border-2="" border-outline-variant="" border-secondary="" border-secondary-fixed-dim="" classname="{`w-6" current="" flex="" font-black="" h-6="" i="" items-center="" justify-center="" rounded-full="" shrink-0="" text-on-surface-variant'="" text-secondary-fixed-dim'="" text-surface'="" text-xs="" }`}="">
+              {i &lt; current ? '✓' : i + 1}
+            </div>
+            {step}
+          </div>
+          {i &lt; steps.length - 1 &amp;&amp; (
+            <div ${="" 'bg-outline-variant="" 'bg-secondary'="" 30'="" :="" <="" ?="" classname="{`flex-1" current="" h-[2px]="" i="" min-w-[16px]="" }`}="">
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── ScoreBadge ── */
+function ScoreBadge({ score }) {
+  const label = score &gt;= 75 ? 'Excellent' : score &gt;= 55 ? 'Good' : score &gt;= 35 ? 'Moderate' : 'Poor';
+  const colorClass = score &gt;= 75 ? 'text-secondary border-secondary/40 bg-secondary/10' : score &gt;= 55 ? 'text-tertiary-fixed border-tertiary-fixed/40 bg-tertiary-fixed/10' : score &gt;= 35 ? 'text-[#F59E0B] border-[#F59E0B]/40 bg-[#F59E0B]/10' : 'text-error border-error/40 bg-error/10';
+  return (
+    <div ${colorclass}`}="" border="" classname="{`inline-flex" gap-1.5="" items-center="" px-3.5="" py-1.5="" rounded-full="">
+<span classname="text-xl font-black font-headline-lg">{Number(score).toFixed(1)}</span>
+<span classname="text-xs font-bold font-body-sm tracking-wide">/100 — {label}</span>
+</div>
+  );
+}
+
+/* ── Spinner ── */
+function Spinner() {
+  return (
+    <div classname="flex flex-col items-center gap-4 p-12 text-on-surface-variant">
+<svg classname="animate-spin" height="48" viewbox="0 0 48 48" width="48">
+<circle cx="24" cy="24" fill="none" r="20" stroke="rgba(212,228,250,0.1)" strokewidth="3"></circle>
+<circle cx="24" cy="24" fill="none" r="20" stroke="#2fd9f4" strokedasharray="40 86" strokelinecap="round" strokewidth="3"></circle>
+</svg>
+<p classname="text-sm font-semibold font-body-md">Running suitability prediction models...</p>
+</div>
+  );
+}
+
+export default function CompareTwoPoints() {
+  const navigate = useNavigate();
+  const pdfRef = useRef(null);
+  const STEPS = ['Industry', 'Location A', 'Location B', 'Results'];
+
+  const [step, setStep] = useState(0);
+  const [industries, setIndustries] = useState([]);
+  const [industry, setIndustry] = useState('');
+  const [locA, setLocA] = useState(null);
+  const [locB, setLocB] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [resultA, setResultA] = useState(null);
+  const [resultB, setResultB] = useState(null);
+
+  useEffect(() =&gt; {
+    getIndustryTypes()
+      .then(types =&gt; {
+        const opts = types.length ? types : INDUSTRY_OPTIONS.map(o =&gt; o.value);
+        setIndustries(opts);
+        setIndustry(opts[0] || '');
+      })
+      .catch(() =&gt; {
+        const opts = INDUSTRY_OPTIONS.map(o =&gt; o.value);
+        setIndustries(opts);
+        setIndustry(opts[0] || '');
+      });
+  }, []);
+
+  const handleLocASelect = ({ lat, lon }) =&gt; {
+    if (!isInsideGujarat(lat, lon)) { setError('Location A coordinates are outside Gujarat borders.'); return; }
+    setError('');
+    setLocA({ lat, lon });
+  };
+
+  const handleLocBSelect = ({ lat, lon }) =&gt; {
+    if (!isInsideGujarat(lat, lon)) { setError('Location B coordinates are outside Gujarat borders.'); return; }
+    setError('');
+    setLocB({ lat, lon });
+  };
+
+  const runComparison = async () =&gt; {
+    setError('');
+    setLoading(true);
+    try {
+      const [rA, rB] = await Promise.all([
+        predictSite({ latitude: locA.lat, longitude: locA.lon, industryType: industry }),
+        predictSite({ latitude: locB.lat, longitude: locB.lon, industryType: industry }),
+      ]);
+      setResultA(rA);
+      setResultB(rB);
+      setStep(3);
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || 'Prediction engine failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportPDF = () =&gt; {
+    if (!pdfRef.current) return;
+    html2pdf().set({
+      margin: 10, filename: 'compare-two-points.pdf',
+      html2canvas: { scale: 2 }, jsPDF: { orientation: 'portrait', format: 'a4' },
+    }).from(pdfRef.current).save();
+  };
+
+  const criteriaKeys = resultA &amp;&amp; resultB ? Object.keys(resultA.criteria_breakdown || {}) : [];
+  const scoreA = resultA?.mcda_final_suitability_score ?? 0;
+  const scoreB = resultB?.mcda_final_suitability_score ?? 0;
+  const winner = scoreA &gt; scoreB ? 'A' : scoreB &gt; scoreA ? 'B' : 'Tie';
+
+  const allMarkers = [
+    ...(locA ? [{ lat: locA.lat, lon: locA.lon, color: '#2fd9f4', label: 'Site A' }] : []),
+    ...(locB ? [{ lat: locB.lat, lon: locB.lon, color: '#ddb7ff', label: 'Site B' }] : []),
+  ];
+
+  return (
+    <layout>
+      {/* Subheader */}
+      <div classname="bg-surface-container-high/80 backdrop-blur-md border-b border-surface-container-highest px-4 py-3 sm:px-10">
+<div classname="flex items-center justify-between flex-wrap gap-3 max-w-[1000px] mx-auto w-full">
+<button =="" onclick="{()"> navigate('/compare')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-md transition-colors"
+          &gt;
+            ← Compare Hub
+          </button>
+<span classname="font-display-md font-extrabold text-lg tracking-tight">
+<span classname="text-secondary-fixed-dim">Two-Point</span>
+<span classname="text-on-surface"> Compare</span>
+</span>
+</div>
+</div>
+<main classname="max-w-[1000px] w-full mx-auto px-4 py-6 sm:px-6 sm:py-12 animate-[fadeIn_0.3s_ease-out]">
+<stepbar current="{step}" steps="{STEPS}">
+
+        {error &amp;&amp; (
+          <div classname="px-4 py-3.5 rounded-xl bg-error/10 border border-error/20 text-error text-sm font-bold mb-6 text-center shadow-[0_0_15px_rgba(255,180,171,0.1)]">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* STEP 0: Industry */}
+        {step === 0 &amp;&amp; (
+          <div classname="bg-surface-container/60 backdrop-blur-xl rounded-2xl p-6 sm:p-9 border border-surface-container-highest shadow-xl">
+<h2 classname="font-display-md text-2xl font-black m-0 mb-1.5 tracking-tight text-on-surface">Select Target Industry</h2>
+<p classname="text-on-surface-variant text-sm m-0 mb-7 font-body-md">Choose the industry sector to evaluate both locations against.</p>
+<div classname="grid gap-3 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
+              {industries.map(ind =&gt; (
+                <button =="" key="{ind}" onclick="{()"> setIndustry(ind)}
+                  className={`px-4 py-3.5 rounded-xl cursor-pointer text-sm font-bold font-sans transition-all duration-200 text-left border-2
+                    ${industry === ind 
+                      ? 'bg-secondary-fixed-dim/10 border-secondary-fixed-dim text-secondary-fixed-dim shadow-[0_0_20px_rgba(47,217,244,0.15)]' 
+                      : 'bg-surface-container-lowest/30 border-surface-container-highest text-on-surface-variant hover:border-outline-variant hover:bg-surface-container-lowest/50'
+                    }`}
+                &gt;
+                  {formatIndustry(ind)}
+                </button>
+              ))}
+            </div>
+<button =="" disabled="{!industry}" onclick="{()"> setStep(1)}
+              className="mt-8 px-9 py-3.5 bg-primary text-on-primary rounded-xl font-bold text-sm hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(195,198,215,0.2)]"
+            &gt;
+              Continue →
+            </button>
+</div>
+        )}
+
+        {/* STEP 1: Location A */}
+        {step === 1 &amp;&amp; (
+          <div classname="bg-surface-container/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-surface-container-highest shadow-xl">
+<div classname="p-6 sm:px-8 pb-5 border-b border-surface-container-highest">
+<div classname="flex items-center gap-2.5 mb-1.5">
+<div classname="w-3.5 h-3.5 rounded-full bg-secondary-fixed-dim shadow-[0_0_10px_#2fd9f4]">
+<h2 classname="font-display-md text-xl font-black m-0 tracking-tight text-on-surface">Select Location A</h2>
+</div>
+<p classname="text-on-surface-variant text-sm m-0 font-body-md">Click anywhere on the map inside Gujarat state borders to set the first location (shown in cyan).</p>
+              {locA &amp;&amp; <div classname="mt-2.5 text-sm text-secondary-fixed-dim font-bold tabular-nums">✓ Location A coordinates: {locA.lat.toFixed(5)}°N, {locA.lon.toFixed(5)}°E</div>}
+            </div>
+<div classname="h-[420px] relative bg-surface-container-lowest">
+<mapcomponent '#2fd9f4',="" 'site="" :="" ?="" []}="" [{="" a'="" color:="" label:="" lat:="" loca.lat,="" loca.lon,="" lon:="" markers="{locA" onlocationselect="{handleLocASelect}" }]="">
+</mapcomponent></div>
+<div classname="p-5 sm:px-8 flex gap-3 bg-surface-container-low/50">
+<button =="" onclick="{()"> setStep(0)} className="px-6 py-3 text-sm font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-xl transition-colors"&gt;
+                ← Back
+              </button>
+<button =="" disabled="{!locA}" onclick="{()"> setStep(2)}
+                className="px-7 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(195,198,215,0.2)]"
+              &gt;
+                {locA ? 'Continue to Location B →' : 'Set Location A'}
+              </button>
+</div>
+</div>
+        )}
+
+        {/* STEP 2: Location B */}
+        {step === 2 &amp;&amp; (
+          <div classname="bg-surface-container/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-surface-container-highest shadow-xl">
+<div classname="p-6 sm:px-8 pb-5 border-b border-surface-container-highest">
+<div classname="flex items-center gap-2.5 mb-1.5">
+<div classname="w-3.5 h-3.5 rounded-full bg-tertiary-fixed-dim shadow-[0_0_10px_#ddb7ff]">
+<h2 classname="font-display-md text-xl font-black m-0 tracking-tight text-on-surface">Select Location B</h2>
+</div>
+<p classname="text-on-surface-variant text-sm m-0 font-body-md">Click anywhere inside Gujarat state borders to set the second location (shown in lavender).</p>
+              {locB &amp;&amp; <div classname="mt-2.5 text-sm text-tertiary-fixed-dim font-bold tabular-nums">✓ Location B coordinates: {locB.lat.toFixed(5)}°N, {locB.lon.toFixed(5)}°E</div>}
+            </div>
+<div classname="h-[420px] relative bg-surface-container-lowest">
+<mapcomponent markers="{allMarkers}" onlocationselect="{handleLocBSelect}">
+</mapcomponent></div>
+<div classname="p-5 sm:px-8 flex gap-3 flex-wrap bg-surface-container-low/50">
+<button =="" onclick="{()"> setStep(1)} className="px-6 py-3 text-sm font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-xl transition-colors"&gt;
+                ← Back
+              </button>
+<button classname="px-7 py-3 bg-secondary-fixed text-on-secondary-fixed rounded-xl font-bold text-sm hover:bg-secondary-fixed-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(162,238,255,0.3)]" disabled="{!locB" loading}="" onclick="{runComparison}" ||="">
+                {locB ? '🚀 Run Suitability Comparison' : 'Set Location B'}
+              </button>
+</div>
+</div>
+        )}
+
+        {/* STEP 3: Loading */}
+        {loading &amp;&amp; (
+          <div classname="bg-surface-container/60 backdrop-blur-xl rounded-2xl border border-surface-container-highest shadow-xl">
+<spinner>
+</spinner></div>
+        )}
+
+        {/* STEP 3: Results */}
+        {step === 3 &amp;&amp; resultA &amp;&amp; resultB &amp;&amp; !loading &amp;&amp; (
+          <div classname="animate-[fadeIn_0.4s_ease-out]" ref="{pdfRef}">
+            {/* Winner banner */}
+            <div ${="" 'a'="" 'bg-primary-container="" 'bg-secondary-container="" 'bg-tertiary-container="" 'tie'="" 10="" 30="" 30'="" :="" ?="" border-2="" border-primary="" border-secondary-fixed-dim="" border-tertiary-fixed-dim="" classname="{`text-center" mb-7="" p-6="" rounded-2xl="" shadow-[0_0_30px_rgba(221,183,255,0.1)]'="" shadow-[0_0_30px_rgba(47,217,244,0.1)]'="" winner="==" }`}="">
+<div classname="text-3xl mb-1">{winner === 'Tie' ? '🤝' : '🏆'}</div>
+<div ${="" 'a'="" 'text-primary-fixed-dim'="" 'text-secondary-fixed-dim'="" 'text-tertiary-fixed-dim'="" 'tie'="" :="" ?="" classname="{`font-display-md" font-black="" text-2xl="" tracking-tight="" winner="==" }`}="">
+                {winner === 'Tie' ? "It's a Tie!" : `Location ${winner} Wins!`}
+              </div>
+<div classname="text-sm text-on-surface-variant mt-1.5 font-bold">
+                {winner !== 'Tie' ? `Δ Score Delta: ${Math.abs(scoreA - scoreB).toFixed(1)} points` : 'Both locations score equally'}
+              </div>
+</div>
+
+            {/* Header pill */}
+            <div classname="mb-6 px-4 py-3.5 rounded-xl bg-surface-container-low/50 border border-surface-container-highest text-sm text-on-surface-variant flex flex-wrap gap-x-2 gap-y-1 items-center font-body-md">
+<span>Industry Segment: <strong classname="text-on-surface font-semibold">{formatIndustry(industry)}</strong></span>
+<span classname="hidden sm:inline text-outline-variant">·</span>
+<span>Location A: <strong classname="text-secondary-fixed-dim font-semibold">{resultA.district || `${locA.lat.toFixed(4)}°N`}</strong></span>
+<span classname="hidden sm:inline text-outline-variant">·</span>
+<span>Location B: <strong classname="text-tertiary-fixed-dim font-semibold">{resultB.district || `${locB.lat.toFixed(4)}°N`}</strong></span>
+</div>
+
+            {/* Score cards */}
+            <div classname="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5 mb-8">
+              {[
+                { label: 'Location A', result: resultA, colorClass: 'text-secondary-fixed-dim', colorHex: '#2fd9f4', bgClass: 'bg-secondary-fixed-dim/10 border-secondary-fixed-dim/30', shadowClass: 'shadow-[0_12px_32px_rgba(47,217,244,0.15)]', loc: locA, score: scoreA, isWinner: winner === 'A' },
+                { label: 'Location B', result: resultB, colorClass: 'text-tertiary-fixed-dim', colorHex: '#ddb7ff', bgClass: 'bg-tertiary-fixed-dim/10 border-tertiary-fixed-dim/30', shadowClass: 'shadow-[0_12px_32px_rgba(221,183,255,0.15)]', loc: locB, score: scoreB, isWinner: winner === 'B' },
+              ].map(({ label, result, colorClass, colorHex, bgClass, shadowClass, loc, score, isWinner }) =&gt; (
+                <div ${="" ${shadowclass}`="" 'bg-surface-container="" 60="" :="" ?="" `${bgclass}="" backdrop-blur-xl="" border-2="" border-surface-container-highest'="" classname="{`rounded-2xl" duration-300="" iswinner="" key="{label}" p-6="" transition-all="" }`}="">
+<div classname="flex items-center justify-between mb-4">
+<div classname="flex items-center gap-2">
+<div ${colorhex}`="" 0="" 8px="" `0="" background:="" boxshadow:="" classname="w-2.5 h-2.5 rounded-full" colorhex,="" style="{{" }}="">
+<span classname="font-display-md font-extrabold text-lg text-on-surface">{label}</span>
+</div>
+                    {isWinner &amp;&amp; <span ${colorclass}="" 30`}="" 50="" bg-surface-container-highest="" border="" border-current="" classname="{`text-xs" font-black="" px-2.5="" py-1="" rounded-full="" tracking-wide="" uppercase="">WINNER</span>}
+                  </div>
+<div classname="mb-4"><scorebadge score="{score}"></scorebadge></div>
+<div classname="text-sm text-on-surface-variant leading-relaxed font-body-md space-y-1">
+                    {result.district &amp;&amp; <div><b classname="text-on-surface font-semibold">District:</b> {result.district}</div>}
+                    <div classname="font-data-mono"><b classname="text-on-surface font-semibold font-sans">Coords:</b> {loc.lat.toFixed(5)}°N, {loc.lon.toFixed(5)}°E</div>
+                    {result.lightgbm_predicted_label &amp;&amp; <div><b classname="text-on-surface font-semibold">ML Label:</b> <span classname="{colorClass}">{result.lightgbm_predicted_label}</span></div>}
+                  </div>
+</div>
+              ))}
+            </div>
+
+            {/* Criteria comparative breakdown table */}
+            {criteriaKeys.length &gt; 0 &amp;&amp; (
+              <div classname="bg-surface-container-low/80 border border-surface-container-highest rounded-2xl overflow-hidden mb-8 shadow-lg">
+<div classname="px-6 py-5 border-b border-surface-container-highest bg-surface-container/50">
+<h3 classname="font-display-md text-lg font-extrabold m-0 text-on-surface">Suitability Parameter Matrix</h3>
+</div>
+<div classname="overflow-x-auto">
+                  
+                      {criteriaKeys.map((key, idx) =&gt; {
+                        const cA = resultA.criteria_breakdown[key];
+                        const cB = resultB.criteria_breakdown[key];
+                        const sA = cA?.score_100 ?? 0;
+                        const sB = cB?.score_100 ?? 0;
+                        const delta = sA - sB;
+                        const deltaClass = delta &gt; 0 ? 'text-secondary' : delta &lt; 0 ? 'text-[#F59E0B]' : 'text-on-surface-variant';
+                        return (
+                          
+                        );
+                      })}
+                    <table classname="w-full border-collapse text-sm text-left">
+<thead>
+<tr classname="bg-surface-container-lowest/30">
+<th classname="px-5 py-3.5 font-semibold text-on-surface-variant border-b border-surface-container-highest">Criterion Description</th>
+<th classname="px-5 py-3.5 font-bold text-secondary-fixed-dim text-center border-b border-surface-container-highest">Score A</th>
+<th classname="px-5 py-3.5 font-bold text-tertiary-fixed-dim text-center border-b border-surface-container-highest">Score B</th>
+<th classname="px-5 py-3.5 font-semibold text-on-surface-variant text-center border-b border-surface-container-highest">Δ Delta</th>
+<th classname="px-5 py-3.5 font-semibold text-outline text-center border-b border-surface-container-highest">Weight</th>
+</tr>
+</thead>
+<tbody classname="font-body-md"><tr ${idx="" %="" 'bg-surface-container-lowest="" 'bg-transparent'="" 0="" 2="==" 20'}="" 40="" 50="" :="" ?="" border-surface-container-highest="" classname="{`border-b" hover:bg-surface-container="" key="{key}" transition-colors`}="">
+<td classname="px-5 py-3 text-on-surface font-medium capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </td>
+<td classname="px-5 py-3 text-center text-secondary-fixed-dim font-bold font-data-mono">{Number(sA).toFixed(1)}</td>
+<td classname="px-5 py-3 text-center text-tertiary-fixed-dim font-bold font-data-mono">{Number(sB).toFixed(1)}</td>
+<td ${deltaclass}`}="" classname="{`px-5" font-black="" font-data-mono="" py-3="" text-center="">
+                              {delta &gt; 0 ? '+' : ''}{Number(delta).toFixed(1)}
+                            </td>
+<td classname="px-5 py-3 text-center text-outline font-medium font-data-mono">
+                              {((cA?.weight ?? cB?.weight ?? 0) * 100).toFixed(0)}%
+                            </td>
+</tr></tbody>
+</table>
+</div>
+</div>
+            )}
+
+            {/* Score visual bars */}
+            <div classname="bg-surface-container/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-surface-container-highest mb-8 shadow-lg">
+<h3 classname="font-display-md text-lg font-extrabold m-0 mb-5 text-on-surface">Score Parameter Visualizations</h3>
+<div classname="space-y-4">
+                {criteriaKeys.slice(0, 8).map(key =&gt; {
+                  const sA = resultA.criteria_breakdown[key]?.score_100 ?? 0;
+                  const sB = resultB.criteria_breakdown[key]?.score_100 ?? 0;
+                  const label = key.replace(/_/g, ' ').replace(/\b\w/g, c =&gt; c.toUpperCase());
+                  return (
+                    <div key="{key}">
+<div classname="flex justify-between mb-1.5 text-xs text-on-surface-variant font-semibold">
+<span>{label}</span>
+<span classname="font-data-mono">A: <b classname="text-secondary-fixed-dim">{Number(sA).toFixed(1)}</b> <span classname="text-outline-variant">·</span> B: <b classname="text-tertiary-fixed-dim">{Number(sB).toFixed(1)}</b></span>
+</div>
+<div classname="relative h-1.5 bg-surface-container-highest rounded-full mb-1 overflow-hidden">
+<div '0="" 0="" 100)}%`,="" 10px="" `${math.min(sa,="" boxshadow:="" classname="absolute left-0 top-0 h-full bg-secondary-fixed-dim rounded-full transition-[width] duration-700 ease-out" rgba(47,217,244,0.5)'="" style="{{" width:="" }}="">
+</div>
+<div classname="relative h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div '0="" 0="" 100)}%`,="" 10px="" `${math.min(sb,="" boxshadow:="" classname="absolute left-0 top-0 h-full bg-tertiary-fixed-dim rounded-full transition-[width] duration-700 ease-out delay-100" rgba(221,183,255,0.5)'="" style="{{" width:="" }}="">
+</div>
+</div>
+                  );
+                })}
+              </div>
+<div classname="flex gap-4 mt-6">
+<div classname="flex items-center gap-1.5 text-xs text-on-surface-variant font-semibold">
+<div classname="w-6 h-1.5 bg-secondary-fixed-dim rounded-full shadow-[0_0_8px_rgba(47,217,244,0.4)]">
+                  Location A
+                </div>
+<div classname="flex items-center gap-1.5 text-xs text-on-surface-variant font-semibold">
+<div classname="w-6 h-1.5 bg-tertiary-fixed-dim rounded-full shadow-[0_0_8px_rgba(221,183,255,0.4)]">
+                  Location B
+                </div>
+</div>
+</div>
+
+            {/* Actions */}
+            <div classname="flex gap-3 flex-wrap">
+<button =="" onclick="{()"> navigate('/compare')} className="px-6 py-3 text-sm font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest rounded-xl transition-colors border border-transparent hover:border-surface-container-highest"&gt;
+                ← Return to Hub
+              </button>
+<button =="" onclick="{()"> { setStep(0); setLocA(null); setLocB(null); setResultA(null); setResultB(null); setError(''); }} className="px-6 py-3 text-sm font-bold text-secondary-fixed-dim border border-secondary-fixed-dim/30 hover:bg-secondary-fixed-dim/10 rounded-xl transition-colors"&gt;
+                New Comparison
+              </button>
+<button classname="px-7 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm hover:bg-primary-fixed-dim transition-colors shadow-[0_4px_14px_rgba(195,198,215,0.2)] ml-auto" onclick="{handleExportPDF}">
+                📄 Download PDF Audit
+              </button>
+</div>
+</div>
+        )}
+      </div></div></div></div></div></div></div></stepbar></main>
+</layout>
+  );
+}</div></body></html>

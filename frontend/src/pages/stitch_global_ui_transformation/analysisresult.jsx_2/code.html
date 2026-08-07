@@ -1,0 +1,230 @@
+<html><head></head><body>import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { findSuggestion } from '../api/analysis';
+import api from '../api/client';
+import Layout from '../components/Common/Layout';
+
+/* ── Icons ── */
+const BackIcon = () =&gt; <svg fill="none" height="16" stroke="currentColor" strokelinecap="round" strokewidth="2.2" viewbox="0 0 24 24" width="16"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+const PinIcon = () =&gt; <svg fill="none" height="14" stroke="currentColor" strokelinecap="round" strokewidth="2" viewbox="0 0 24 24" width="14"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+const SpinIcon = () =&gt; <svg fill="none" height="18" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="18"><path 'center'="" 'spin="" 0.75s="" animation:="" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" infinite',="" linear="" style="{{" transformorigin:="" }}=""></path></svg>;
+
+export default function AnalysisResult() {
+  const navigate = useNavigate();
+
+  const location = (() =&gt; { try { return JSON.parse(sessionStorage.getItem('analysisLocation') || 'null'); } catch { return null; } })();
+  const [result] = useState(() =&gt; { try { return JSON.parse(sessionStorage.getItem('last_prediction_report') || 'null'); } catch { return null; } });
+  
+  const [savingNode, setSavingNode] = useState(false);
+  const [error, setError] = useState('');
+
+  const [searchingSuggestion, setSearchingSuggestion] = useState(false);
+  const [searchedSuggestion, setSearchedSuggestion] = useState(false);
+  const [suggestion, setSuggestion] = useState(() =&gt; { try { return JSON.parse(sessionStorage.getItem('better_site_suggestion') || 'null'); } catch { return null; } });
+
+  useEffect(() =&gt; {
+    if (suggestion) setSearchedSuggestion(true);
+  }, [suggestion]);
+
+  if (!result || !location) {
+    return (
+      <layout>
+<div '16px',="" '24px'="" '60vh',="" 'center',="" 'column',="" 'flex',="" 'var(--text-primary)',="" alignitems:="" color:="" display:="" flexdirection:="" gap:="" justifycontent:="" minheight:="" padding:="" style="{{" textalign:="" }}="">
+<h2 '20px'="" '850',="" 'var(--font-display)',="" fontfamily:="" fontsize:="" fontweight:="" style="{{" }}="">No Analysis Result Logged</h2>
+<p '14px',="" '380px'="" 'var(--text-muted)',="" color:="" fontsize:="" maxwidth:="" style="{{" }}="">
+            Please select a location and run a suitability scoring simulation first.
+          </p>
+<button =="" onclick="{()"> navigate('/analysis')} className="btn-primary" style={{ padding: '12px 24px', background: '#5de6ff', color: '#00363e', borderRadius: '8px', fontWeight: '600' }}&gt;
+            Go to Map view
+          </button>
+</div>
+</layout>
+    );
+  }
+
+  const scoreNum = Number(result.mcda_final_suitability_score || 0);
+  let badgeColor = '#5de6ff', badgeBg = 'rgba(93,230,255,0.1)', badgeBorder = 'rgba(93,230,255,0.3)', categoryLabel = 'Good';
+  if (scoreNum &gt;= 70) { badgeColor = '#10B981'; badgeBg = 'rgba(16,185,129,0.1)'; badgeBorder = 'rgba(16,185,129,0.3)'; categoryLabel = 'Excellent'; }
+  else if (scoreNum &lt; 45) { badgeColor = '#ffb4ab'; badgeBg = 'rgba(255,180,171,0.1)'; badgeBorder = 'rgba(255,180,171,0.3)'; categoryLabel = 'Poor'; }
+
+  const handleDeployNode = async () =&gt; {
+    setSavingNode(true);
+    setError('');
+    try {
+      const district = result.district || 'Gujarat';
+      const industry = result.industry_type;
+      await api.post('projects/', {
+        name: `${industry} – ${district}`,
+        latitude: location.lat || location.latitude,
+        longitude: location.lon || location.longitude,
+        description: '',
+        analysis_data: result,
+      });
+      navigate('/nodes');
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Failed to save node to catalog.');
+    } finally {
+      setSavingNode(false);
+    }
+  };
+
+  const handleFindSuggestion = async () =&gt; {
+    if (searchingSuggestion) return;
+    setSearchingSuggestion(true);
+    setError('');
+    try {
+      const res = await findSuggestion({
+        latitude: location.lat || location.latitude,
+        longitude: location.lon || location.longitude,
+        industryType: result.industry_type,
+        currentScore: scoreNum,
+      });
+      setSuggestion(res || null);
+      if (res) {
+        sessionStorage.setItem('better_site_suggestion', JSON.stringify(res));
+      } else {
+        sessionStorage.removeItem('better_site_suggestion');
+      }
+      setSearchedSuggestion(true);
+    } catch (e) {
+      console.error("Suggestion search error:", e);
+      setError('An error occurred while scanning suggested nearby sites.');
+    } finally {
+      setSearchingSuggestion(false);
+    }
+  };
+
+  return (
+    <layout>
+      {/* Sub-header Navigation */}
+      <div #273647',="" '#0d1c2d',="" '12px="" '1px="" 40px)'="" 4vw,="" background:="" borderbottom:="" clamp(16px,="" padding:="" solid="" style="{{" }}="">
+<div '0="" '100%'="" '12px',="" '960px',="" 'center',="" 'flex',="" 'space-between',="" 'wrap',="" alignitems:="" auto',="" display:="" flexwrap:="" gap:="" justifycontent:="" margin:="" maxwidth:="" style="{{" width:="" }}="">
+<button =="" onclick="{()"> navigate('/analysis/run')}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '13px', background: 'transparent', color: '#c3c6d7', border: '1px solid #46464c', borderRadius: '20px', fontWeight: '500' }}
+          &gt;
+            <backicon> Change Industry
+          </backicon></button>
+<div '#5de6ff',="" '13px',="" '1px="" '20px',="" '6px="" '6px',="" '750',="" 'center',="" 'flex',="" 'jetbrains="" 'rgba(93,230,255,0.08)',="" 'tabular-nums',="" 14px',="" alignitems:="" background:="" border:="" borderradius:="" color:="" display:="" fontfamily:="" fontsize:="" fontvariantnumeric:="" fontweight:="" gap:="" mono,="" monospace'="" padding:="" rgba(93,230,255,0.3)',="" solid="" style="{{" }}="">
+<pinicon>
+            {Number(location.lat || location.latitude).toFixed(5)}° N, {Number(location.lon || location.longitude).toFixed(5)}° E
+          </pinicon></div>
+</div>
+</div>
+<main '0="" '100%',="" '960px',="" 'clamp(28px,4vw,48px)="" auto',="" clamp(16px,4vw,40px)'="" classname="anim-fadeIn" margin:="" maxwidth:="" padding:="" style="{{" width:="" }}="">
+        {/* Score Display Card */}
+        <div '40px'="" 'center',="" marginbottom:="" style="{{" textalign:="" }}="">
+<div ${badgeborder}`,="" '0.04em',="" '12px',="" '20px',="" '6px="" '800',="" '8px',="" 'center',="" 'inline-flex',="" 'uppercase'="" 14px',="" `${badgebg}`,="" `1px="" alignitems:="" background:="" badgecolor,="" border:="" borderradius:="" color:="" display:="" fontsize:="" fontweight:="" gap:="" letterspacing:="" marginbottom:="" padding:="" solid="" style="{{" texttransform:="" }}="">
+            ✓ Suitability Simulation Complete
+          </div>
+<h2 '#d4e4fa'="" '-0.03em',="" '0="" '900',="" 'clamp(26px,4vw,42px)',="" 'inter,="" 0="" 6px',="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" sans-serif',="" style="{{" }}="">
+            {result.district || 'Gujarat Region'}
+          </h2>
+<p '#c7c6cc',="" '0="" '14.5px',="" '500'="" 0="" 40px',="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">
+            Sector: <span '#5de6ff',="" '700'="" color:="" fontweight:="" style="{{" }}="">{result.industry_type}</span>
+</p>
+
+          {/* Score ring */}
+          <div #051424)`,="" #122131,="" ${badgebg},="" ${badgebg}`,="" ${badgecolor}`,="" '220px',="" '40px',="" '50%',="" 'center',="" 'column',="" 'inline-flex',="" 'relative'="" 0="" 20px="" 40px="" `0="" `4px="" `linear-gradient(135deg,="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" display:="" flexdirection:="" height:="" inset="" justifycontent:="" marginbottom:="" position:="" solid="" style="{{" width:="" }}="">
+<div ${badgecolor}`,="" '-4px',="" '50%',="" 'absolute',="" 'blur(8px)',="" 'none'="" 0.6,="" `1px="" border:="" borderradius:="" bottom:="" filter:="" left:="" opacity:="" pointerevents:="" position:="" right:="" solid="" style="{{" top:="" }}=""></div>
+<span '0.06em',="" '11px',="" '800',="" 'uppercase',="" 1="" badgecolor,="" color:="" fontsize:="" fontweight:="" letterspacing:="" style="{{" texttransform:="" zindex:="" }}="">Suitability Score</span>
+<div ${badgebg}`,="" '#d4e4fa',="" '-0.02em',="" '64px',="" '8px="" '900',="" 'inter,="" 0="" 1="" 1,="" 20px="" 4px',="" `0="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" lineheight:="" margin:="" sans-serif',="" style="{{" textshadow:="" zindex:="" }}="">
+              {scoreNum.toFixed(1)}
+            </div>
+<span '15px',="" '700',="" 1="" badgecolor,="" color:="" fontsize:="" fontweight:="" style="{{" zindex:="" }}="">/ 100 — {categoryLabel}</span>
+</div>
+</div>
+
+        {/* Optimizations */}
+        {!searchedSuggestion &amp;&amp; !searchingSuggestion &amp;&amp; (
+          <div #0d1c2d="" #122131="" #2fd9f4',="" '0="" '16px',="" '1px="" '20px',="" '24px',="" '32px',="" 'center',="" 'flex',="" 'linear-gradient(135deg,="" 'space-between',="" 'wrap'="" 0%,="" 0.1)',="" 100%)',="" 217,="" 244,="" 32px="" 8px="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" display:="" flexwrap:="" gap:="" justifycontent:="" marginbottom:="" padding:="" rgba(47,="" solid="" style="{{" }}="">
+<div '16px',="" '260px'="" 'center',="" 'flex',="" 1,="" alignitems:="" display:="" flex:="" gap:="" minwidth:="" style="{{" }}="">
+<div '12px',="" '1px="" '24px',="" '48px',="" 'center',="" 'flex',="" 'rgba(47,="" 0.15)',="" 0.3)'="" 217,="" 244,="" alignitems:="" background:="" border:="" borderradius:="" display:="" fontsize:="" height:="" justifycontent:="" rgba(47,="" solid="" style="{{" width:="" }}="">💡</div>
+<div>
+<h4 '#2fd9f4',="" '-0.01em'="" '16px',="" '800',="" 'inter,="" 0,="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" sans-serif',="" style="{{" }}="">
+                  Coordinate Optimization Engine
+                </h4>
+<p '#c7c6cc',="" '14px',="" '6px="" 0="" 0',="" 1.5="" color:="" fontsize:="" lineheight:="" margin:="" style="{{" }}="">
+                  Scan mapping zones and substations within 20 km to discover higher-scoring alternative sites for <b '#d4e4fa'}}="" style="{{color:">{result.industry_type}</b>.
+                </p>
+</div>
+</div>
+<button '#00363e',="" '#5de6ff',="" '0="" '12px="" '14px',="" '700',="" '8px',="" 'none',="" 'nowrap',="" 'pointer'="" 14px="" 24px',="" 4px="" background:="" border:="" borderradius:="" boxshadow:="" color:="" cursor:="" fontsize:="" fontweight:="" onclick="{handleFindSuggestion}" padding:="" rgba(93,230,255,0.3)',="" style="{{" whitespace:="" }}="">
+              Scan Suggested Area (20km)
+            </button>
+</div>
+        )}
+
+        {searchingSuggestion &amp;&amp; (
+          <div '#5de6ff',="" '12px',="" '14px'="" '16px',="" '1px="" '24px',="" '32px',="" '700',="" 'center',="" 'flex',="" 'rgba(93,230,255,0.05)',="" alignitems:="" background:="" border:="" borderradius:="" color:="" display:="" fontsize:="" fontweight:="" gap:="" justifycontent:="" marginbottom:="" padding:="" rgba(93,230,255,0.2)',="" solid="" style="{{" }}="">
+<spinicon>
+<span>Engaging optimization engine: Scanning industrial grids inside 20 km...</span>
+</spinicon></div>
+        )}
+
+        {searchedSuggestion &amp;&amp; suggestion &amp;&amp; suggestion.mcda_final_suitability_score &amp;&amp; (
+          <div '16px',="" '1px="" '20px',="" '24px',="" '32px',="" 'center',="" 'flex',="" 'linear-gradient(135deg,="" 'space-between',="" 'wrap'="" 0%,="" 100%)',="" alignitems:="" background:="" border:="" borderradius:="" display:="" flexwrap:="" gap:="" justifycontent:="" marginbottom:="" padding:="" rgba(16,185,129,0.02)="" rgba(16,185,129,0.1)="" rgba(16,185,129,0.4)',="" solid="" style="{{" }}="">
+<div '16px',="" '260px'="" 'center',="" 'flex',="" 1,="" alignitems:="" display:="" flex:="" gap:="" minwidth:="" style="{{" }}="">
+<div '12px',="" '1px="" '24px',="" '48px',="" 'center',="" 'flex',="" 'rgba(16,185,129,0.2)',="" alignitems:="" background:="" border:="" borderradius:="" display:="" fontsize:="" height:="" justifycontent:="" rgba(16,185,129,0.5)'="" solid="" style="{{" width:="" }}="">🚀</div>
+<div>
+<h4 '#10b981',="" '-0.01em'="" '16px',="" '800',="" 'inter,="" 0,="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" sans-serif',="" style="{{" }}="">
+                  Higher-Suitability Location Identified
+                </h4>
+<p '#c7c6cc',="" '14px',="" '6px="" 0="" 0',="" 1.5="" color:="" fontsize:="" lineheight:="" margin:="" style="{{" }}="">
+                  We found a better site for <b '#d4e4fa'}}="" style="{{color:">{result.industry_type}</b> in the <b '#d4e4fa'}}="" style="{{color:">{suggestion.district || 'Gujarat'} Region</b> with an optimized suitability index of <b '#10b981'}}="" style="{{color:">{Number(suggestion.mcda_final_suitability_score).toFixed(1)}/100</b>.
+                </p>
+</div>
+</div>
+<button =="" onclick="{()"> navigate('/analysis/suggestion-map')}
+              style={{
+                padding: '12px 24px',
+                fontSize: '14px',
+                fontWeight: '700',
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer'
+              }}
+            &gt;
+              🗺️ Compare on Suggestion Map
+            </button>
+</div>
+        )}
+
+        {searchedSuggestion &amp;&amp; (!suggestion || !suggestion.mcda_final_suitability_score) &amp;&amp; (
+          <div #273647',="" '#122131',="" '16px'="" '16px',="" '1px="" '24px',="" '32px',="" 'center',="" 'flex',="" alignitems:="" background:="" border:="" borderradius:="" display:="" gap:="" marginbottom:="" padding:="" solid="" style="{{" }}="">
+<div '#1c2b3c',="" '12px',="" '24px'="" '48px',="" 'center',="" 'flex',="" alignitems:="" background:="" borderradius:="" display:="" fontsize:="" height:="" justifycontent:="" style="{{" width:="" }}="">✨</div>
+<div>
+<h4 '#d4e4fa',="" '15px',="" '750',="" 'inter,="" 0,="" color:="" fontfamily:="" fontsize:="" fontweight:="" margin:="" sans-serif'="" style="{{" }}="">
+                Site Position Confirmed Optimal
+              </h4>
+<p '#c7c6cc',="" '14px',="" '4px="" 0="" 0',="" 1.5="" color:="" fontsize:="" lineheight:="" margin:="" style="{{" }}="">
+                This selected coordinates coordinate represents the most suitable site layout for <b>{result.industry_type}</b> within a 20 km local radius.
+              </p>
+</div>
+</div>
+        )}
+
+        {error &amp;&amp; (
+          <div #93000a',="" '#ffb4ab',="" '12px',="" '14px',="" '16px="" '1px="" '24px',="" '700',="" 'center'="" 'rgba(147,0,10,0.2)',="" 20px',="" background:="" border:="" borderradius:="" color:="" fontsize:="" fontweight:="" marginbottom:="" padding:="" solid="" style="{{" textalign:="" }}="">
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* Action Controls */}
+        <div '16px',="" 'center',="" 'flex',="" 'wrap'="" alignitems:="" display:="" flexwrap:="" gap:="" justifycontent:="" style="{{" }}="">
+<button =="" onclick="{()"> navigate('/report')}
+            style={{ padding: '12px 28px', fontSize: '14px', fontWeight: '700', background: 'transparent', color: '#d4e4fa', border: '1px solid #46464c', borderRadius: '8px', cursor: 'pointer' }}
+          &gt;
+            📊 View Siting Audit Report
+          </button>
+<button '#00363e',="" '#5de6ff',="" '0="" '12px="" '14px',="" '700',="" '8px',="" 'none',="" 'not-allowed'="" 'pointer'="" 0.7="" 1,="" 16px="" 28px',="" 4px="" :="" ?="" background:="" border:="" borderradius:="" boxshadow:="" color:="" cursor:="" disabled="{savingNode}" fontsize:="" fontweight:="" onclick="{handleDeployNode}" opacity:="" padding:="" rgba(93,230,255,0.25)',="" savingnode="" style="{{" }}="">
+            {savingNode ? 'Cataloging...' : '������ Deploy Analysis as Node'}
+          </button>
+</div>
+</main>
+</layout>
+  );
+}</body></html>

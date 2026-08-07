@@ -98,6 +98,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'apps.users.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Database – using standard PostgreSQL (no local GDAL needed)
 DATABASES = {
     'default': env.db('DATABASE_URL')

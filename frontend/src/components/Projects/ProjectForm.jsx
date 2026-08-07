@@ -13,21 +13,20 @@ function SuccessToast({ message, onDone }) {
       position: 'fixed', bottom: '24px', right: '24px', zIndex: 10000,
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '14px 20px',
-      background: 'rgba(10, 14, 26, 0.90)',
-      backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(16, 185, 129, 0.35)',
+      background: 'var(--c-surface)',
+      border: '1px solid var(--c-success-light)',
       borderRadius: 'var(--r-md)',
-      color: '#A7F3D0',
+      color: 'var(--c-success)',
       fontSize: '13.5px',
       fontWeight: '600',
-      boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(16,185,129,0.15)',
+      boxShadow: 'var(--shadow-lg)',
     }}>
       <div style={{
         width: '24px', height: '24px', borderRadius: '50%',
-        background: 'rgba(16, 185, 129, 0.15)',
+        background: 'var(--c-success-light)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--emerald)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-success)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       </div>
@@ -47,21 +46,20 @@ function AlertToast({ message, onDone }) {
       position: 'fixed', bottom: '24px', right: '24px', zIndex: 10000,
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '14px 20px',
-      background: 'rgba(10, 14, 26, 0.90)',
-      backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(239, 68, 68, 0.35)',
+      background: 'var(--c-surface)',
+      border: '1px solid var(--c-error-light)',
       borderRadius: 'var(--r-md)',
-      color: '#FECACA',
+      color: 'var(--c-error)',
       fontSize: '13.5px',
       fontWeight: '600',
-      boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(239,68,68,0.15)',
+      boxShadow: 'var(--shadow-lg)',
     }}>
       <div style={{
         width: '24px', height: '24px', borderRadius: '50%',
-        background: 'rgba(239, 68, 68, 0.15)',
+        background: 'var(--c-error-light)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-error)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </div>
@@ -174,29 +172,15 @@ export default function ProjectForm({ onProjectCreated, selectedLocation, analys
         <button
           type="submit"
           disabled={loading || !name.trim()}
+          className="btn-primary"
           style={{
             width: '100%',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
             padding: '11px',
             borderRadius: 'var(--r-md)',
-            background: name.trim() ? 'var(--grad-btn)' : 'rgba(255, 255, 255, 0.02)',
-            border: `1px solid ${name.trim() ? 'rgba(34, 211, 238, 0.25)' : 'var(--border-subtle)'}`,
-            color: name.trim() ? '#ffffff' : 'var(--text-muted)',
-            fontWeight: '700', fontSize: '13px',
+            opacity: name.trim() ? 1 : 0.6,
             cursor: loading || !name.trim() ? 'not-allowed' : 'pointer',
             transition: 'all 0.22s var(--ease-out)',
-            fontFamily: 'var(--font-sans)',
-            boxShadow: name.trim() ? '0 4px 14px rgba(34, 211, 238, 0.15)' : 'none',
-          }}
-          onMouseEnter={e => {
-            if (name.trim() && !loading) {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(34, 211, 238, 0.3)';
-            }
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = 'none';
-            e.currentTarget.style.boxShadow = name.trim() ? '0 4px 14px rgba(34, 211, 238, 0.15)' : 'none';
           }}
         >
           {loading ? (

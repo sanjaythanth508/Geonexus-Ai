@@ -3,122 +3,23 @@ import { register, loginWithGoogle, sendOTP, verifyOTP } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import Layout from '../components/Common/Layout';
 
-
-/* ═══════════════════════════════════════════════
-   PARTICLES BACKGROUND
-═══════════════════════════════════════════════ */
-function ParticleField() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = canvas.offsetWidth;
-    let h = canvas.height = canvas.offsetHeight;
-    let animId;
-
-    const particles = Array.from({ length: 60 }, () => ({
-      x: Math.random() * w, y: Math.random() * h,
-      r: Math.random() * 1.2 + 0.3,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      alpha: Math.random() * 0.5 + 0.1,
-    }));
-
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(139,92,246,${p.alpha})`; 
-        ctx.fill();
-      });
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(139,92,246,${0.06 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-    const onResize = () => {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-    };
-    window.addEventListener('resize', onResize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', onResize); };
-  }, []);
-
-  return (
-    <canvas ref={canvasRef} style={{
-      position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none',
-    }} />
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   ANIMATED LOGO GLOBE
-═══════════════════════════════════════════════ */
-function GlobeIcon({ size = 36 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <defs>
-        <linearGradient id="lg-globe-reg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#8B5CF6"/>
-          <stop offset="50%" stopColor="#3B82F6"/>
-          <stop offset="100%" stopColor="#22D3EE"/>
-        </linearGradient>
-        <filter id="glow-filter-reg">
-          <feGaussianBlur stdDeviation="2" result="blur"/>
-          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-        </filter>
-      </defs>
-      <circle cx="24" cy="24" r="20" stroke="url(#lg-globe-reg)" strokeWidth="1.5" fill="none" filter="url(#glow-filter-reg)"/>
-      <ellipse cx="24" cy="24" rx="10" ry="20" stroke="url(#lg-globe-reg)" strokeWidth="1.5" fill="none"/>
-      <line x1="4" y1="24" x2="44" y2="24" stroke="url(#lg-globe-reg)" strokeWidth="1.5"/>
-      <line x1="8" y1="15" x2="40" y2="15" stroke="url(#lg-globe-reg)" strokeWidth="1" strokeDasharray="2 2"/>
-      <line x1="8" y1="33" x2="40" y2="33" stroke="url(#lg-globe-reg)" strokeWidth="1" strokeDasharray="2 2"/>
-      <circle cx="24" cy="24" r="3.5" fill="url(#lg-globe-reg)"/>
-    </svg>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   ICONS
-═══════════════════════════════════════════════ */
+/* ── Icons ── */
 const UserIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const MailIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
 const LockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-const EyeIcon  = ({open}) => open
+const EyeIcon  = ({ open }) => open
   ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
   : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>;
 const UserPlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>;
 const AlertIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>;
-const PhoneIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>;
-const BuildingIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9.01" y2="6"/><line x1="15" y1="6" x2="15.01" y2="6"/><line x1="9" y1="10" x2="9.01" y2="10"/><line x1="15" y1="10" x2="15.01" y2="10"/><line x1="9" y1="14" x2="9.01" y2="14"/><line x1="15" y1="14" x2="15.01" y2="14"/><line x1="9" y1="18" x2="9.01" y2="18"/><line x1="15" y1="18" x2="15.01" y2="18"/></svg>;
-const BriefcaseIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
-const MapPinIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 
 function LoadSpinner() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-        style={{ animation: 'spin 0.75s linear infinite', transformOrigin:'center' }}/>
+        style={{ animation: 'spin 0.75s linear infinite', transformOrigin: 'center' }}/>
     </svg>
   );
 }
@@ -132,64 +33,33 @@ function getStrength(pwd) {
   if (/[^A-Za-z0-9]/.test(pwd)) score++;
   const map = [
     { label: '', color: 'transparent' },
-    { label: 'Weak password', color: '#EF4444' },
-    { label: 'Fair security', color: '#F97316' },
-    { label: 'Good configuration', color: '#EAB308' },
-    { label: 'Highly secure key', color: '#10B981' },
+    { label: 'Weak password', color: 'var(--c-error)' },
+    { label: 'Fair security', color: 'var(--c-warning)' },
+    { label: 'Good configuration', color: 'var(--c-warning)' },
+    { label: 'Highly secure key', color: 'var(--c-success)' },
   ];
   return { score, ...map[score] };
 }
 
-function Orbs() {
-  return (
-    <>
-      <div style={{ position:'absolute', bottom:'-10%', left:'-5%', width:'500px', height:'500px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 65%)', pointerEvents:'none', animation:'floatSlow 8s ease-in-out infinite' }} />
-      <div style={{ position:'absolute', top:'-15%', right:'-8%', width:'600px', height:'600px', borderRadius:'50%',
-        background:'radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 65%)', pointerEvents:'none', animation:'floatSlow 10s ease-in-out infinite 3s' }} />
-    </>
-  );
-}
-
-function OrbitRings() {
-  return (
-    <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none' }}>
-      {[220, 340, 460].map((r, i) => (
-        <div key={i} style={{
-          position:'absolute', top:'50%', left:'50%',
-          width:`${r}px`, height:`${r}px`,
-          marginLeft:`${-r/2}px`, marginTop:`${-r/2}px`,
-          borderRadius:'50%',
-          border:`1px solid rgba(139,92,246,${0.04 - i * 0.01})`,
-          animation:`spin ${30 + i * 15}s linear infinite ${i % 2 === 0 ? '' : 'reverse'}`,
-        }} />
-      ))}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   MAIN REGISTER PAGE
-═══════════════════════════════════════════════ */
 export default function Register() {
   const location = useLocation();
   const initialGoogleInfo = location.state?.googleInfo || null;
 
   const [username, setUsername] = useState(initialGoogleInfo?.email || '');
   const [fullName, setFullName] = useState(initialGoogleInfo?.full_name || '');
-  const [email,    setEmail]    = useState(initialGoogleInfo?.email || '');
+  const [email, setEmail] = useState(initialGoogleInfo?.email || '');
   const [password, setPassword] = useState('');
-  const [phone, setPhone]       = useState('');
-  const [organization, setOrganization] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
-  const [userLocation, setUserLocation] = useState('');
-  const [bio, setBio]           = useState('');
+  const [phone, setPhone] = useState('');
+  const [organization] = useState('');
+  const [jobTitle] = useState('');
+  const [userLocation] = useState('');
+  const [bio] = useState('');
 
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
-  const [step,     setStep]     = useState(0);
+  const [step, setStep] = useState(0);
 
   // OTP Verification States
   const [otpSent, setOtpSent] = useState(false);
@@ -211,8 +81,8 @@ export default function Register() {
 
   useEffect(() => {
     const t1 = setTimeout(() => setStep(1), 80);
-    const t2 = setTimeout(() => setStep(2), 280);
-    const t3 = setTimeout(() => setStep(3), 480);
+    const t2 = setTimeout(() => setStep(2), 240);
+    const t3 = setTimeout(() => setStep(3), 400);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
@@ -221,30 +91,30 @@ export default function Register() {
     if (name === 'fullName') {
       if (!value) errs.fullName = 'Full Name is required';
       else if (value.length < 2) errs.fullName = 'Full Name must be at least 2 characters';
-      else if (!/^[a-zA-Z\s\-\']+$/.test(value)) errs.fullName = 'Full name can only contain letters, spaces, hyphens, and apostrophes';
+      else if (!/^[a-zA-Z\s\-\']+$/.test(value)) errs.fullName = 'Letters, spaces, hyphens and apostrophes only';
       else delete errs.fullName;
     }
     if (name === 'username') {
       if (!value) errs.username = 'Username is required';
       else if (value.length < 3) errs.username = 'Username must be at least 3 characters';
-      else if (!/^[a-zA-Z0-9_\-]+$/.test(value)) errs.username = 'Username can only contain alphanumeric characters, underscores, and hyphens';
+      else if (!/^[a-zA-Z0-9_\-]+$/.test(value)) errs.username = 'Alphanumeric, underscores and hyphens only';
       else delete errs.username;
     }
     if (name === 'email') {
       if (!value) errs.email = 'Email is required';
-      else if (!/^[\w\.\+\-]+\@[\w\.\-]+\.[\w]{2,}$/.test(value)) errs.email = 'Invalid email address format';
+      else if (!/^[\w\.\+\-]+\@[\w\.\-]+\.[\w]{2,}$/.test(value)) errs.email = 'Invalid email format';
       else delete errs.email;
     }
     if (name === 'password') {
       if (!value) errs.password = 'Password is required';
-      else if (value.length < 8) errs.password = 'Password must be at least 8 characters';
-      else if (!/[A-Z]/.test(value)) errs.password = 'Password must contain at least one uppercase letter';
-      else if (!/[0-9]/.test(value)) errs.password = 'Password must contain at least one digit';
-      else if (!/[^A-Za-z0-9]/.test(value)) errs.password = 'Password must contain at least one special character';
+      else if (value.length < 8) errs.password = 'Must be at least 8 characters';
+      else if (!/[A-Z]/.test(value)) errs.password = 'Must contain an uppercase letter';
+      else if (!/[0-9]/.test(value)) errs.password = 'Must contain a digit';
+      else if (!/[^A-Za-z0-9]/.test(value)) errs.password = 'Must contain a special character';
       else delete errs.password;
     }
     if (name === 'phone') {
-      if (value && !/^\+?[0-9\s\-()]{7,20}$/.test(value)) errs.phone = 'Invalid phone format (7 to 20 digits/symbols)';
+      if (value && !/^\+?[0-9\s\-()]{7,20}$/.test(value)) errs.phone = 'Invalid phone format';
       else delete errs.phone;
     }
     setValidationErrors(errs);
@@ -311,10 +181,10 @@ export default function Register() {
     const y = e.clientY - rect.top;
     const rEl = document.createElement('span');
     Object.assign(rEl.style, {
-      position:'absolute', left:`${x}px`, top:`${y}px`,
-      width:'6px', height:'6px', marginLeft:'-3px', marginTop:'-3px',
-      background:'rgba(255,255,255,0.5)', borderRadius:'50%',
-      animation:'ripple 0.7s ease-out forwards', pointerEvents:'none',
+      position: 'absolute', left: `${x}px`, top: `${y}px`,
+      width: '6px', height: '6px', marginLeft: '-3px', marginTop: '-3px',
+      background: 'var(--text-muted)', borderRadius: '50%',
+      animation: 'ripple 0.7s ease-out forwards', pointerEvents: 'none',
     });
     btn.appendChild(rEl);
     setTimeout(() => rEl.remove(), 700);
@@ -378,7 +248,6 @@ export default function Register() {
     }
   };
 
-
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     setError('');
@@ -388,7 +257,6 @@ export default function Register() {
       loginWithTokens(data, data.user?.username || 'Google User');
       
       if (data.is_new_user) {
-        // Redirect to finish registration with prefilled Google info
         navigate('/register', { state: { googleInfo: data.google_info } });
       } else {
         navigate('/home');
@@ -404,377 +272,325 @@ export default function Register() {
   const tf = { transition: 'opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out)' };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      background: `var(--grad-mesh), var(--bg-primary)`,
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <ParticleField />
-      <Orbs />
-
-      <div className="hide-mobile" style={{
-        flex: 1,
+    <Layout authTheme={true}>
+      <div style={{
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '60px',
-        position: 'relative',
-        zIndex: 2,
-      }}>
-        <OrbitRings />
-        <div style={{ textAlign: 'center', maxWidth: '400px', position: 'relative', zIndex: 1 }}>
-          <div className="anim-floatSlow" style={{ marginBottom: '28px', animation: 'float 6s ease-in-out infinite' }}>
-            <GlobeIcon size={100} />
+        gap: '60px',
+        padding: '24px',
+        maxWidth: '1000px',
+        width: '100%',
+      }} className="flex-col md:flex-row">
+        {/* Info Column */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          maxWidth: '380px',
+          ...tf,
+          opacity: step >= 1 ? 1 : 0,
+          transform: step >= 1 ? 'none' : 'translateY(16px)',
+        }} className="hidden md:flex">
+          <div style={{
+            width: '80px', height: '80px', borderRadius: '24px',
+            background: 'var(--c-primary-50)',
+            border: '1px solid var(--c-primary-200)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: '24px',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" stroke="url(#heroGl)" strokeWidth="2.5"/>
+              <ellipse cx="24" cy="24" rx="10" ry="20" stroke="url(#heroGl)" strokeWidth="2"/>
+              <defs>
+                <linearGradient id="heroGl" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="var(--c-primary-500)"/><stop offset="100%" stopColor="var(--c-primary-700)"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '16px' }}>
-            <span className="gradient-text">{isGoogleMode ? 'Complete Your Profile' : 'Join GeoNexus AI'}</span>
+            <span className="gradient-text">{isGoogleMode ? 'Verify Details' : 'Join GeoNexus'}</span>
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '15px', lineHeight: 1.75 }}>
             {isGoogleMode 
-              ? 'We imported your details from Google! Fill in your remaining profile information to activate your operator desk.'
-              : 'Create an account to deploy geospatial insights, store custom analysis markers, and generate interactive intelligence maps.'
+              ? 'Complete registration with your prefilled Google details to activate your account.' 
+              : 'Create an account to run MCDA suitability algorithms and deploy industrial analysis nodes.'
             }
           </p>
 
-          {isGoogleMode && initialGoogleInfo?.avatar_url && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '12px', marginTop: '24px',
-              padding: '8px 16px', borderRadius: 'var(--r-full)',
-              background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.25)'
-            }}>
-              <img src={initialGoogleInfo.avatar_url} alt="Google Avatar" style={{ width: '28px', height: '28px', borderRadius: '50%' }} />
-              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cyan)' }}>Verified via Google</span>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '28px' }}>
-            {['🔒 Secure Storage', '🛰️ Satellite Views', '⚡ Instant Processing', '📈 Scale Analytics'].map(f => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '32px' }}>
+            {[' Secure Storage', '️ Satellite Views', ' Instant Processing', ' Scale Analytics'].map(f => (
               <div key={f} style={{
-                padding: '7px 14px', borderRadius: 'var(--r-full)',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-subtle)',
-                fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '500',
+                padding: '6px 14px', borderRadius: 'var(--r-full)',
+                background: 'var(--c-surface)', border: '1px solid var(--border-subtle)',
+                fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600',
+                boxShadow: 'var(--shadow-xs)'
               }}>{f}</div>
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="hide-mobile" style={{
-        width: '1px',
-        background: 'linear-gradient(to bottom, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent)',
-        alignSelf: 'stretch',
-        margin: '60px 0',
-      }}/>
+        {/* Divider */}
+        <div style={{
+          width: '1px',
+          background: 'linear-gradient(to bottom, transparent, var(--border-subtle) 20%, var(--border-subtle) 80%, transparent)',
+          alignSelf: 'stretch',
+        }} className="hidden md:block"/>
 
-      <div style={{
-        width: 'clamp(340px, 50%, 560px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'clamp(20px, 4vw, 50px) clamp(16px, 4vw, 50px)',
-        position: 'relative',
-        zIndex: 2,
-        flexShrink: 0,
-      }}
-      className="form-container"
-      >
-        <div style={{ width: '100%', maxWidth: '440px' }}>
-
-          <div className="show-mobile" style={{
-            display: 'none', flexDirection: 'column', alignItems: 'center',
-            marginBottom: '24px', textAlign: 'center',
-            ...tf,
-            opacity: step >= 1 ? 1 : 0,
-            transform: step >= 1 ? 'none' : 'translateY(16px)',
-          }}>
-            <div style={{ marginBottom: '10px' }}><GlobeIcon size={52} /></div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '800', letterSpacing: '-0.03em' }}>
-              <span className="gradient-text">GeoNexus AI</span>
-            </h1>
-          </div>
-
-          <div style={{ marginBottom: '24px', ...tf, opacity: step >= 1 ? 1 : 0, transform: step >= 1 ? 'none' : 'translateY(20px)' }}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px,2.8vw,26px)', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '6px' }}>
-              {isGoogleMode ? 'Complete Sign-Up 🚀' : 'Create Account 🛰️'}
+        {/* Form Column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          maxWidth: '440px',
+        }}>
+          <div style={{ marginBottom: '24px', ...tf, opacity: step >= 1 ? 1 : 0, transform: step >= 1 ? 'none' : 'translateY(12px)' }} className="text-center md:text-left">
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '6px' }}>
+              {isGoogleMode ? 'Complete Sign-Up' : 'Create Account'}
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13.5px' }}>
-              {isGoogleMode ? 'Review your Google details and finish setting up' : 'Register to access the visualization suite'}
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+              {isGoogleMode ? 'Review your imported profile information' : 'Register via secure email verification'}
             </p>
           </div>
 
           <div
             key={shakeKey}
-            className={`glass-bright ${error && shakeKey ? 'anim-shake' : ''}`}
+            className={`form-card ${error && shakeKey ? 'anim-shake' : ''}`}
             style={{
-              borderRadius: 'var(--r-xl)',
-              overflow: 'hidden',
-              boxShadow: '0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.07)',
               ...tf,
               opacity: step >= 2 ? 1 : 0,
-              transform: step >= 2 ? 'none' : 'translateY(24px)',
+              transform: step >= 2 ? 'none' : 'translateY(16px)',
+              padding: '28px clamp(16px, 5vw, 32px)',
+              maxWidth: '440px'
             }}
           >
-            <div style={{
-              height: '3px',
-              background: 'linear-gradient(90deg, #8B5CF6, #3B82F6, #22D3EE, #8B5CF6)',
-              backgroundSize: '300% 100%',
-              animation: 'gradient-flow 4s ease infinite',
-            }} />
+            {error && (
+              <div className="anim-fadeDown" style={{
+                display: 'flex', alignItems: 'flex-start', gap: '10px',
+                padding: '12px 14px', borderRadius: 'var(--r-md)',
+                background: 'var(--c-error-light)', border: '1px solid var(--c-error)',
+                color: 'var(--text-primary)', fontSize: '13px', marginBottom: '20px',
+              }}>
+                <AlertIcon />
+                <span>{error}</span>
+              </div>
+            )}
 
-            <div style={{ padding: 'clamp(20px,4vw,30px)' }}>
-
-              {error && (
-                <div className="anim-fadeDown" style={{
-                  display: 'flex', alignItems: 'flex-start', gap: '10px',
-                  padding: '12px 14px', borderRadius: 'var(--r-md)',
-                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.22)',
-                  color: '#FCA5A5', fontSize: '13px', marginBottom: '20px',
-                }}>
-                  <AlertIcon />
-                  <span>{error}</span>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                  <div className="form-input-wrapper" style={{ flex: 1 }}>
+                    <span className="form-input-icon">
+                      <MailIcon />
+                    </span>
+                    <input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={handleEmailChange}
+                      className="form-input-field"
+                      required
+                      readOnly={isGoogleMode || otpVerified}
+                    />
+                  </div>
+                  {!isGoogleMode && !otpVerified && (
+                    <button
+                      type="button"
+                      disabled={otpLoading || !email || !!validationErrors.email}
+                      onClick={handleSendOTP}
+                      className="btn-ghost"
+                      style={{ fontSize: '12px', whiteSpace: 'nowrap', padding: '0 16px', borderRadius: 'var(--r-md)' }}
+                    >
+                      {otpLoading ? 'Sending...' : otpSent ? 'Resend' : 'Send OTP'}
+                    </button>
+                  )}
                 </div>
-              )}
+                {validationErrors.email && (
+                  <span style={{ fontSize: '11px', color: 'var(--c-error)', marginTop: '2px', display: 'block' }}>{validationErrors.email}</span>
+                )}
 
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Email Address</label>
-                  <div style={{ position: 'relative', display: 'flex', gap: '8px' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                        <MailIcon />
-                      </span>
+                {!isGoogleMode && otpSent && !otpVerified && (
+                  <div className="anim-fadeDown" style={{
+                    padding: '12px', borderRadius: 'var(--r-md)',
+                    background: 'var(--c-surface-hover)', border: '1px solid var(--border-subtle)',
+                    marginTop: '8px'
+                  }}>
+                    <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>Verification Code</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={handleEmailChange}
-                        className="input-field"
-                        style={{ paddingLeft: '40px' }}
-                        required
-                        readOnly={isGoogleMode || otpVerified}
+                        type="text"
+                        maxLength="6"
+                        placeholder="000000"
+                        value={otpCode}
+                        onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        className="form-input-field"
+                        style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '16px', fontWeight: '800', flex: 1, paddingLeft: '16px' }}
                       />
-                    </div>
-                    {!isGoogleMode && !otpVerified && (
                       <button
                         type="button"
-                        disabled={otpLoading || !email || !!validationErrors.email}
-                        onClick={handleSendOTP}
-                        className="btn-ghost"
-                        style={{ padding: '0 16px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                        disabled={otpLoading || otpCode.length !== 6}
+                        onClick={handleVerifyOTP}
+                        className="btn-primary"
+                        style={{ padding: '0 20px', borderRadius: 'var(--r-md)', fontSize: '12px' }}
                       >
-                        {otpLoading ? 'Sending...' : otpSent ? 'Resend' : 'Send Code'}
+                        {otpLoading ? 'Verifying...' : 'Verify'}
                       </button>
-                    )}
-                  </div>
-                  {validationErrors.email && (
-                    <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.email}</span>
-                  )}
-                  
-                  {!isGoogleMode && otpSent && !otpVerified && (
-                    <div className="anim-fadeDown" style={{
-                      padding: '14px', borderRadius: 'var(--r-md)',
-                      background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)',
-                      marginTop: '8px'
-                    }}>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Enter 6-Digit Code</label>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="text"
-                          maxLength="6"
-                          placeholder="123456"
-                          value={otpCode}
-                          onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                          className="input-field"
-                          style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '16px', fontWeight: '700', flex: 1 }}
-                        />
-                        <button
-                          type="button"
-                          disabled={otpLoading || otpCode.length !== 6}
-                          onClick={handleVerifyOTP}
-                          className="btn-primary"
-                          style={{ padding: '0 20px', fontSize: '12px' }}
-                        >
-                          {otpLoading ? 'Verifying...' : 'Verify'}
-                        </button>
-                      </div>
                     </div>
-                  )}
-
-                  {otpMessage.text && (
-                    <div style={{
-                      fontSize: '12px',
-                      color: otpMessage.type === 'success' ? '#10B981' : '#EF4444',
-                      marginTop: '6px',
-                      fontWeight: '600'
-                    }}>
-                      {otpMessage.type === 'success' ? '✓ ' : '✗ '}{otpMessage.text}
-                    </div>
-                  )}
-                </div>
-
-                {(isGoogleMode || otpVerified) && (
-                  <div className="anim-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '6px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Full Name</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                          <UserIcon />
-                        </span>
-                        <input
-                          type="text"
-                          placeholder="John Doe"
-                          value={fullName}
-                          onChange={e => {
-                            setFullName(e.target.value);
-                            validateField('fullName', e.target.value);
-                          }}
-                          className="input-field"
-                          style={{ paddingLeft: '40px' }}
-                          required
-                        />
-                      </div>
-                      {validationErrors.fullName && (
-                        <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.fullName}</span>
-                      )}
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Username</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                          <UserIcon />
-                        </span>
-                        <input
-                          type="text"
-                          placeholder="Choose username"
-                          value={username}
-                          onChange={e => {
-                            setUsername(e.target.value);
-                            validateField('username', e.target.value);
-                          }}
-                          className="input-field"
-                          style={{ paddingLeft: '40px' }}
-                          required
-                        />
-                      </div>
-                      {validationErrors.username && (
-                        <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.username}</span>
-                      )}
-                    </div>
-
-                    {!isGoogleMode && (
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>Password</label>
-                        <div style={{ position: 'relative' }}>
-                          <span style={{ position: 'absolute', left: '13px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', display: 'flex', pointerEvents: 'none' }}>
-                            <LockIcon />
-                          </span>
-                          <input
-                            type={showPass ? 'text' : 'password'}
-                            placeholder="Create security key"
-                            value={password}
-                            onChange={e => {
-                              setPassword(e.target.value);
-                              validateField('password', e.target.value);
-                            }}
-                            className="input-field"
-                            style={{ paddingLeft: '40px', paddingRight: '44px' }}
-                            required={!isGoogleMode}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPass(v => !v)}
-                            style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '4px', borderRadius: '6px', transition: 'color 0.2s' }}
-                          >
-                            <EyeIcon open={showPass} />
-                          </button>
-                        </div>
-                        {validationErrors.password && (
-                          <span style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px', display: 'block' }}>{validationErrors.password}</span>
-                        )}
-
-                        {password && (
-                          <div className="anim-fadeUp" style={{ marginTop: '8px' }}>
-                            <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
-                              {[1, 2, 3, 4].map(idx => (
-                                <div key={idx} style={{
-                                  flex: 1, height: '3px', borderRadius: '2px',
-                                  background: idx <= strength.score ? strength.color : 'var(--text-faint)',
-                                  transition: 'background 0.3s ease',
-                                }} />
-                              ))}
-                            </div>
-                            <span style={{ fontSize: '11px', color: strength.color, fontWeight: '700' }}>{strength.label}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <button
-                      ref={btnRef}
-                      type="submit"
-                      disabled={loading}
-                      className="btn-primary"
-                      onClick={handleRipple}
-                      style={{ marginTop: '10px', padding: '13px', fontSize: '14px', width: '100%' }}
-                    >
-                      {loading ? <><LoadSpinner /> Creating Account…</> : <><UserPlusIcon /> Complete Sign-Up</>}
-                    </button>
                   </div>
                 )}
 
-              </form>
+                {otpMessage.text && (
+                  <span style={{
+                    fontSize: '12px',
+                    color: otpMessage.type === 'success' ? 'var(--c-success)' : 'var(--c-error)',
+                    marginTop: '4px',
+                    fontWeight: '600',
+                    display: 'block'
+                  }}>
+                    {otpMessage.type === 'success' ? ' ' : ' '}{otpMessage.text}
+                  </span>
+                )}
+              </div>
 
-              {!isGoogleMode && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', margin: '18px 0' }}>
-                    <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
-                    <span style={{ padding: '0 12px', fontSize: '12px', color: 'var(--text-muted)' }}>or</span>
-                    <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}></div>
+              {(isGoogleMode || otpVerified) && (
+                <div className="anim-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Full Name</label>
+                    <div className="form-input-wrapper">
+                      <span className="form-input-icon">
+                        <UserIcon />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="John Doe"
+                        value={fullName}
+                        onChange={e => { setFullName(e.target.value); validateField('fullName', e.target.value); }}
+                        className="form-input-field"
+                        required
+                      />
+                    </div>
+                    {validationErrors.fullName && (
+                      <span style={{ fontSize: '11px', color: 'var(--c-error)', marginTop: '2px', display: 'block' }}>{validationErrors.fullName}</span>
+                    )}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                    <GoogleLogin
-                      theme="dark"
-                      shape="rectangular"
-                      width="328"
-                      onSuccess={handleGoogleSuccess}
-                      onError={() => setError('Google Authentication failed')}
-                      useOneTap
-                    />
+                  <div className="form-group">
+                    <label className="form-label">Username</label>
+                    <div className="form-input-wrapper">
+                      <span className="form-input-icon">
+                        <UserIcon />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="operator_name"
+                        value={username}
+                        onChange={e => { setUsername(e.target.value); validateField('username', e.target.value); }}
+                        className="form-input-field"
+                        required
+                      />
+                    </div>
+                    {validationErrors.username && (
+                      <span style={{ fontSize: '11px', color: 'var(--c-error)', marginTop: '2px', display: 'block' }}>{validationErrors.username}</span>
+                    )}
                   </div>
-                </>
+
+                  {!isGoogleMode && (
+                    <div className="form-group">
+                      <label className="form-label">Password</label>
+                      <div className="form-input-wrapper">
+                        <span className="form-input-icon">
+                          <LockIcon />
+                        </span>
+                        <input
+                          type={showPass ? 'text' : 'password'}
+                          placeholder="Security password key"
+                          value={password}
+                          onChange={e => { setPassword(e.target.value); validateField('password', e.target.value); }}
+                          className="form-input-field"
+                          style={{ paddingRight: '44px' }}
+                          required={!isGoogleMode}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(v => !v)}
+                          className="form-password-toggle"
+                        >
+                          <EyeIcon open={showPass} />
+                        </button>
+                      </div>
+                      {validationErrors.password && (
+                        <span style={{ fontSize: '11px', color: 'var(--c-error)', marginTop: '2px', display: 'block' }}>{validationErrors.password}</span>
+                      )}
+
+                      {password && (
+                        <div className="anim-fadeUp" style={{ marginTop: '6px' }}>
+                          <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                            {[1, 2, 3, 4].map(idx => (
+                              <div key={idx} style={{
+                                flex: 1, height: '3px', borderRadius: '2px',
+                                background: idx <= strength.score ? strength.color : 'var(--text-faint)',
+                                transition: 'background 0.3s ease',
+                              }} />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: '11px', color: strength.color, fontWeight: '750' }}>{strength.label}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    ref={btnRef}
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary"
+                    onClick={handleRipple}
+                    style={{ padding: '14px', fontSize: '14px', width: '100%', marginTop: '6px' }}
+                  >
+                    {loading ? <><LoadSpinner /> Syncing…</> : <><UserPlusIcon /> Complete Registration</>}
+                  </button>
+                </div>
               )}
+            </form>
 
-            </div>
+            {!isGoogleMode && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}/>
+                  <span style={{ padding: '0 12px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>or</span>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }}/>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <GoogleLogin
+                    theme="outline"
+                    shape="rectangular"
+                    width="100%"
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setError('Google Sign-In failed')}
+                    useOneTap
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <p style={{
-            textAlign: 'center', marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)',
+            textAlign: 'center', marginTop: '24px', fontSize: '13.5px', color: 'var(--text-muted)',
             ...tf, opacity: step >= 3 ? 1 : 0, transform: step >= 3 ? 'none' : 'translateY(12px)',
           }}>
             Already have an account?{' '}
-            <Link to="/login" style={{ color: 'var(--cyan)', fontWeight: '700', textDecoration: 'none' }}>
+            <Link to="/login" style={{ color: 'var(--c-primary-600)', fontWeight: '700', textDecoration: 'none' }}>
               Sign in →
             </Link>
           </p>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 639px) {
-          .form-container { width: 100% !important; }
-          .show-mobile { display: flex !important; }
-        }
-        @media (min-width: 640px) {
-          .show-mobile { display: none !important; }
-          .hide-mobile { display: flex !important; }
-        }
-      `}</style>
-    </div>
+    </Layout>
   );
 }

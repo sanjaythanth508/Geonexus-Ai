@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getIndustryTypes, predictSite, findSuggestion } from '../api/analysis';
+import { getIndustryTypes, predictSite } from '../api/analysis';
 import { isInsideGujarat } from '../utils/locationValidation';
-import api from '../api/client';
+import Layout from '../components/Common/Layout';
 
 /* ── Icons ── */
 const BackIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
@@ -11,15 +11,15 @@ const PlayIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="cur
 const PinIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 
 const INDUSTRY_ICONS = {
-  'Warehousing': '🏭', 'Textile': '🧵', 'Pharmaceutical': '💊', 'Chemical': '⚗️',
-  'Food Processing': '🌽', 'Ceramic': '🏺', 'Diamond': '💎', 'Cotton': '🌾',
-  'Steel': '⚙️', 'Plastics': '🔬', 'Paper': '📄', 'Renewable Energy': '⚡',
-  'Engineering': '🔧', 'Electronics': '💻', 'IT': '🖥️', 'Auto': '🚗',
+  'Warehousing': '', 'Textile': '', 'Pharmaceutical': '', 'Chemical': '️',
+  'Food Processing': '', 'Ceramic': '', 'Diamond': '', 'Cotton': '',
+  'Steel': '️', 'Plastics': '', 'Paper': '', 'Renewable Energy': '',
+  'Engineering': '', 'Electronics': '', 'IT': '️', 'Auto': '',
 };
 
 function getIndustryIcon(type) {
   const key = Object.keys(INDUSTRY_ICONS).find(k => type?.toLowerCase().includes(k.toLowerCase()));
-  return key ? INDUSTRY_ICONS[key] : '🏗️';
+  return key ? INDUSTRY_ICONS[key] : '️';
 }
 
 function IndustryCard({ industry, selected, onSelect }) {
@@ -28,29 +28,28 @@ function IndustryCard({ industry, selected, onSelect }) {
       onClick={() => onSelect(industry)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
-        padding: '20px 16px', borderRadius: '16px', cursor: 'pointer',
-        background: selected ? 'rgba(56,189,248,0.12)' : 'rgba(11,15,25,0.6)',
-        border: `2px solid ${selected ? 'rgba(56,189,248,0.6)' : 'rgba(255,255,255,0.07)'}`,
-        transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',
+        padding: '24px 16px', borderRadius: '16px', cursor: 'pointer',
+        background: selected ? 'var(--c-primary-50)' : 'var(--c-surface)',
+        border: `2px solid ${selected ? 'var(--c-primary-500)' : 'var(--border-default)'}`,
+        transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
         transform: selected ? 'scale(1.04)' : 'scale(1)',
-        boxShadow: selected ? '0 8px 32px rgba(56,189,248,0.2)' : '0 2px 12px rgba(0,0,0,0.3)',
-        backdropFilter: 'blur(12px)',
+        boxShadow: selected ? 'var(--shadow-md)' : 'var(--shadow-sm)',
         fontFamily: 'var(--font-sans)',
       }}
-      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.25)'; e.currentTarget.style.background = 'rgba(56,189,248,0.05)'; }}}
-      onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.background = 'rgba(11,15,25,0.6)'; }}}
+      onMouseEnter={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--c-primary-300)'; e.currentTarget.style.background = 'var(--c-surface-hover)'; }}}
+      onMouseLeave={e => { if (!selected) { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.background = 'var(--c-surface)'; }}}
     >
-      <span style={{ fontSize: '30px', lineHeight: 1 }}>{getIndustryIcon(industry)}</span>
+      <span style={{ fontSize: '32px', lineHeight: 1 }}>{getIndustryIcon(industry)}</span>
       <span style={{
-        fontSize: '12px', fontWeight: selected ? '800' : '600',
-        color: selected ? 'var(--cyan)' : 'var(--text-secondary)',
+        fontSize: '13px', fontWeight: selected ? '800' : '600',
+        color: selected ? 'var(--c-primary-700)' : 'var(--text-secondary)',
         textAlign: 'center', lineHeight: 1.3, transition: 'color 0.2s',
       }}>
         {industry}
       </span>
       {selected && (
-        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--c-primary-500)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px' }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       )}
     </button>
@@ -68,12 +67,6 @@ export default function AnalysisRun() {
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [savingNode, setSavingNode] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const [searchingSuggestion, setSearchingSuggestion] = useState(false);
-  const [searchedSuggestion, setSearchedSuggestion] = useState(false);
-  const [suggestion, setSuggestion] = useState(null);
 
   useEffect(() => {
     getIndustryTypes().then(types => {
@@ -84,14 +77,22 @@ export default function AnalysisRun() {
 
   if (!location) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
-        <div style={{ fontSize: '48px' }}>📍</div>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: '800' }}>No Location Selected</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Please select a location on the map first.</p>
-        <button onClick={() => navigate('/analysis')} style={{ padding: '11px 24px', background: 'var(--grad-btn)', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: '700', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-          Go to Map →
-        </button>
-      </div>
+      <Layout>
+        <div style={{
+          minHeight: '60vh', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '18px',
+          color: 'var(--text-primary)', textAlign: 'center', padding: '24px'
+        }}>
+          <div style={{ fontSize: '48px' }}></div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '22px' }}>No Location Coordinates Found</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', maxWidth: '380px' }}>
+            Please mark a location coordinate point inside Gujarat on the dashboard map view first.
+          </p>
+          <button onClick={() => navigate('/analysis')} className="btn-primary" style={{ padding: '12px 24px' }}>
+            Open Interactive Map
+          </button>
+        </div>
+      </Layout>
     );
   }
 
@@ -99,191 +100,118 @@ export default function AnalysisRun() {
     if (!selectedIndustry || loading) return;
 
     if (!isInsideGujarat(location.lat, location.lon)) {
-      setError(`Coordinates (${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}) are outside Gujarat. Please select a valid Gujarat location.`);
+      setError(`Coordinates (${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}) are outside Gujarat borders.`);
       return;
     }
 
     setError('');
     setLoading(true);
     try {
+      sessionStorage.removeItem('better_site_suggestion');
       const res = await predictSite({ latitude: location.lat, longitude: location.lon, industryType: selectedIndustry });
       sessionStorage.setItem('last_prediction_report', JSON.stringify(res));
       navigate('/analysis/result');
     } catch (err) {
-      setError(err?.response?.data?.detail || err?.message || 'Analysis failed. Please try again.');
+      setError(err?.response?.data?.detail || err?.message || 'Inference engine failed to score coordinates.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFindSuggestion = async () => {
-    if (!result || searchingSuggestion) return;
-    setSearchingSuggestion(true);
-    try {
-      const res = await findSuggestion({
-        latitude: location.lat,
-        longitude: location.lon,
-        industryType: selectedIndustry,
-        currentScore: scoreNum,
-      });
-      setSuggestion(res || null);
-      if (res) {
-        sessionStorage.setItem('better_site_suggestion', JSON.stringify(res));
-      } else {
-        sessionStorage.removeItem('better_site_suggestion');
-      }
-      setSearchedSuggestion(true);
-    } catch (e) {
-      console.error("Suggestion search error:", e);
-    } finally {
-      setSearchingSuggestion(false);
-    }
-  };
-
-  const handleViewFullReport = () => {
-    if (!result) return;
-    sessionStorage.setItem('last_prediction_report', JSON.stringify(result));
-    navigate('/report', { state: { result } });
-  };
-
-  const handleDeployNode = async () => {
-    if (!result) return;
-    setSavingNode(true);
-    try {
-      const district = result.district || 'Gujarat';
-      const industry = result.industry_type || selectedIndustry;
-      await api.post('projects/', {
-        name: `${industry} – ${district}`,
-        latitude: location.lat,
-        longitude: location.lon,
-        description: '',
-        analysis_data: result,
-      });
-      navigate('/nodes');
-    } catch (err) {
-      setError(err?.response?.data?.detail || 'Failed to save node.');
-    } finally {
-      setSavingNode(false);
-    }
-  };
-
-  const scoreNum = result ? Number(result.mcda_final_suitability_score || 0) : 0;
-  let badgeColor = '#22D3EE', badgeBg = 'rgba(34,211,238,0.12)', badgeBorder = 'rgba(34,211,238,0.3)', categoryLabel = 'Good';
-  if (scoreNum >= 70) { badgeColor = '#10B981'; badgeBg = 'rgba(16,185,129,0.12)'; badgeBorder = 'rgba(16,185,129,0.3)'; categoryLabel = 'Excellent'; }
-  else if (scoreNum < 45) { badgeColor = '#F43F5E'; badgeBg = 'rgba(244,63,94,0.12)'; badgeBorder = 'rgba(244,63,94,0.3)'; categoryLabel = 'Poor'; }
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
-      {/* Bg glow */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(56,189,248,0.08) 0%, transparent 60%)' }} />
-
-      {/* Header */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100, height: '64px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 clamp(16px,4vw,40px)',
-        background: 'rgba(3,7,18,0.90)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
+    <Layout>
+      {/* Dynamic Sub-header Navigation row */}
+      <div style={{
+        background: 'var(--c-surface)',
+        borderBottom: '1px solid var(--border-subtle)',
+        padding: '12px clamp(16px, 4vw, 40px)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
           <button
             onClick={() => navigate('/analysis')}
+            className="btn-ghost"
             style={{
-              display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 14px',
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '10px', color: 'var(--text-secondary)', cursor: 'pointer',
-              fontSize: '13px', fontWeight: '600', transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '12.5px'
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.3)'; e.currentTarget.style.color = 'var(--cyan)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
           >
-            <BackIcon /> Back to Map
+            <BackIcon /> Return to Map
           </button>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em' }}>
-              Industry <span style={{ color: 'var(--cyan)' }}>Selection</span>
-            </h1>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px',
+            background: 'var(--c-primary-50)', border: '1px solid var(--c-primary-100)',
+            borderRadius: '20px', fontSize: '12.5px', fontWeight: '700', color: 'var(--c-primary-700)',
+            fontVariantNumeric: 'tabular-nums'
+          }}>
+            <PinIcon />
+            {Number(location.lat).toFixed(5)}° N, {Number(location.lon).toFixed(5)}° E
           </div>
         </div>
+      </div>
 
-        {/* Location pill */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 14px',
-          background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
-          borderRadius: '20px', fontSize: '13px', fontWeight: '600', color: 'var(--cyan)',
-        }}>
-          <PinIcon />
-          {Number(location.lat).toFixed(4)}° N, {Number(location.lon).toFixed(4)}° E
+      <main style={{ maxWidth: '1000px', width: '100%', margin: '0 auto', padding: 'clamp(28px,4vw,48px) clamp(16px,4vw,40px)' }} className="anim-fadeIn">
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px',
+            borderRadius: '20px', background: 'var(--c-primary-50)', border: '1px solid var(--c-primary-100)',
+            marginBottom: '16px', fontSize: '11.5px', fontWeight: '850', color: 'var(--c-primary-700)', letterSpacing: '0.04em', textTransform: 'uppercase'
+          }}>
+            Specification Phase
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px,4vw,36px)', fontWeight: '900', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
+            Choose Target Industry Sector
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14.5px', margin: 0 }}>
+            Specify the industrial classification to run multi-criteria geospatial analysis scoring.
+          </p>
         </div>
-      </header>
 
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: '960px', margin: '0 auto', padding: 'clamp(28px,4vw,48px) clamp(16px,4vw,40px)' }}>
-          <>
-            {/* Step label */}
-            <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px',
-                borderRadius: '20px', background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
-                marginBottom: '16px', fontSize: '12px', fontWeight: '700', color: 'var(--cyan)', letterSpacing: '0.05em',
-              }}>
-                Step 2 of 2
-              </div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px,4vw,38px)', fontWeight: '900', margin: '0 0 8px', letterSpacing: '-0.03em' }}>
-                Select Industry Type
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '15px', margin: 0 }}>
-                Choose the industry sector to analyze for suitability at the selected location.
-              </p>
-            </div>
+        {/* Industry Cards Grid */}
+        {industries.length > 0 ? (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            gap: '16px', marginBottom: '36px',
+          }}>
+            {industries.map(ind => (
+              <IndustryCard
+                key={ind}
+                industry={ind}
+                selected={selectedIndustry === ind}
+                onSelect={setSelectedIndustry}
+              />
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px', color: 'var(--text-muted)', gap: '10px' }}>
+            <SpinIcon />
+            <span>Loading sector indices...</span>
+          </div>
+        )}
 
-            {/* Industry grid */}
-            {industries.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                gap: '14px', marginBottom: '36px',
-              }}>
-                {industries.map(ind => (
-                  <IndustryCard
-                    key={ind}
-                    industry={ind}
-                    selected={selectedIndustry === ind}
-                    onSelect={setSelectedIndustry}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                <SpinIcon /> Loading industry types...
-              </div>
-            )}
+        {error && (
+          <div style={{ padding: '14px 18px', borderRadius: '12px', background: 'var(--c-error-light)', border: '1px solid var(--c-error)', color: 'var(--c-error)', fontSize: '13.5px', fontWeight: '700', marginBottom: '24px', textAlign: 'center' }}>
+            ️ {error}
+          </div>
+        )}
 
-            {error && (
-              <div style={{ padding: '14px 18px', borderRadius: '12px', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.25)', color: '#FCA5A5', fontSize: '14px', fontWeight: '600', marginBottom: '24px' }}>
-                ⚠️ {error}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button
-                onClick={handleRunAnalysis}
-                disabled={!selectedIndustry || loading}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 48px',
-                  background: 'var(--grad-btn)', border: 'none', borderRadius: '16px',
-                  color: '#fff', fontWeight: '900', fontSize: '16px', cursor: 'pointer',
-                  opacity: (!selectedIndustry || loading) ? 0.6 : 1,
-                  transition: 'all 0.25s', fontFamily: 'var(--font-sans)',
-                  boxShadow: '0 8px 32px rgba(56,189,248,0.25)', letterSpacing: '-0.01em',
-                }}
-                onMouseEnter={e => { if (!loading && selectedIndustry) { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(56,189,248,0.35)'; }}}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(56,189,248,0.25)'; }}
-              >
-                {loading ? <><SpinIcon /> Running AI Analysis...</> : <><PlayIcon /> Run Suitability Analysis</>}
-              </button>
-            </div>
-          </>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={handleRunAnalysis}
+            disabled={!selectedIndustry || loading}
+            className="btn-primary"
+            style={{
+              padding: '14px 40px', fontSize: '15px',
+              opacity: (!selectedIndustry || loading) ? 0.65 : 1,
+              transition: 'all 0.25s',
+              boxShadow: 'var(--shadow-md)',
+              minWidth: '220px'
+            }}
+          >
+            {loading ? <><SpinIcon /> Syncing with ML Engine...</> : <><PlayIcon /> Run Suitability Analysis</>}
+          </button>
+        </div>
       </main>
-    </div>
+    </Layout>
   );
 }

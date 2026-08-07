@@ -1,0 +1,251 @@
+<html><head></head><body>import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import { loginWithGoogle } from '../api/auth';
+import Layout from '../components/Common/Layout';
+
+/* ── Icons ── */
+const UserIcon = () =&gt; <svg fill="none" height="18" stroke="currentColor" strokelinecap="round" strokelinejoin="round" strokewidth="2" viewbox="0 0 24 24" width="18"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+const LockIcon = () =&gt; <svg fill="none" height="18" stroke="currentColor" strokelinecap="round" strokelinejoin="round" strokewidth="2" viewbox="0 0 24 24" width="18"><rect height="11" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+const EyeIcon  = ({ open }) =&gt; open
+  ? <svg fill="none" height="18" stroke="currentColor" strokelinecap="round" strokelinejoin="round" strokewidth="2" viewbox="0 0 24 24" width="18"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+  : <svg fill="none" height="18" stroke="currentColor" strokelinecap="round" strokelinejoin="round" strokewidth="2" viewbox="0 0 24 24" width="18"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" x2="23" y1="1" y2="23"></line></svg>;
+const AlertIcon = () =&gt; <svg fill="none" height="18" stroke="currentColor" strokelinecap="round" strokelinejoin="round" strokewidth="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>;
+
+function LoadSpinner() {
+  return (
+    <svg fill="none" height="20" stroke="currentColor" strokewidth="2" viewbox="0 0 24 24" width="20">
+<path 'center'="" 'spin="" 1s="" animation:="" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" infinite',="" linear="" style="{{" transformorigin:="" }}=""></path>
+</svg>
+  );
+}
+
+export default function Login() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  const [step, setStep] = useState(0);
+  const { loginUser, loginWithTokens } = useAuth();
+  const navigate = useNavigate();
+  const btnRef = useRef(null);
+
+  useEffect(() =&gt; {
+    const t1 = setTimeout(() =&gt; setStep(1), 100);
+    const t2 = setTimeout(() =&gt; setStep(2), 200);
+    const t3 = setTimeout(() =&gt; setStep(3), 300);
+    return () =&gt; { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  const handleRipple = useCallback((e) =&gt; {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rEl = document.createElement('span');
+    Object.assign(rEl.style, {
+      position: 'absolute', left: `${x}px`, top: `${y}px`,
+      width: '6px', height: '6px', marginLeft: '-3px', marginTop: '-3px',
+      background: 'rgba(255,255,255,0.4)', borderRadius: '50%',
+      animation: 'ripple 0.6s ease-out forwards', pointerEvents: 'none',
+    });
+    btn.appendChild(rEl);
+    setTimeout(() =&gt; rEl.remove(), 600);
+  }, []);
+
+  const handleSubmit = async (e) =&gt; {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await loginUser(username, password);
+      navigate('/home');
+    } catch {
+      setError('Invalid credentials. Please verify and try again.');
+      setShakeKey(k =&gt; k + 1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) =&gt; {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await loginWithGoogle(credentialResponse.credential);
+      const data = res.data;
+      loginWithTokens(data, data.user?.username || 'Google User');
+      
+      if (data.is_new_user) {
+        navigate('/register', { state: { googleInfo: data.google_info } });
+      } else {
+        navigate('/home', { replace: true });
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Authentication error occurred.');
+      setShakeKey(k =&gt; k + 1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tf = { transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)' };
+
+  return (
+    <layout auththeme="{true}">
+<div classname="flex flex-col md:flex-row min-h-[calc(100vh-4rem)] w-full items-center justify-center p-6 md:p-12 gap-12 lg:gap-24 bg-surface text-on-surface font-body-lg">
+        
+        {/* Brand Side */}
+        <div ...tf,="" opacity:="" step="" style="{{">= 1 ? 1 : 0,
+          transform: step &gt;= 1 ? 'none' : 'translateX(-24px)',
+        }} className="hidden md:flex flex-col flex-1 max-w-[500px] justify-center"&gt;
+          <div classname="mb-10 w-20 h-20 rounded-2xl bg-surface-container-high border border-outline-variant flex items-center justify-center shadow-lg">
+<svg fill="none" height="48" viewbox="0 0 48 48" width="48">
+<circle cx="24" cy="24" r="20" stroke="var(--secondary)" strokewidth="2"></circle>
+<ellipse cx="24" cy="24" rx="8" ry="20" stroke="var(--secondary)" strokewidth="2"></ellipse>
+<line stroke="var(--secondary)" strokewidth="2" x1="4" x2="44" y1="24" y2="24"></line>
+<circle cx="24" cy="24" fill="var(--primary)" r="4"></circle>
+</svg>
+</div>
+<h1 classname="font-display-lg text-display-lg text-on-surface mb-6">
+            Command Your <br/><span classname="text-secondary">GeoData</span>
+</h1>
+<p classname="font-body-lg text-body-lg text-on-surface-variant max-w-md">
+            Secure access to advanced spatial analytics, real-time MCDA scoring, and enterprise-grade intelligence.
+          </p>
+<div classname="mt-12 flex flex-wrap gap-4">
+            {['Enterprise Security', 'End-to-End Encryption', 'AI Guidance'].map(f =&gt; (
+              <div classname="px-4 py-2 rounded-full bg-surface-container border border-outline-variant text-body-md text-on-surface-variant font-medium flex items-center gap-2" key="{f}">
+<span classname="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                {f}
+              </div>
+            ))}
+          </div>
+</div>
+
+        {/* Divider */}
+        <div classname="hidden md:block w-px h-96 bg-gradient-to-b from-transparent via-outline-variant to-transparent opacity-50">
+
+        {/* Login Form Side */}
+        <div classname="w-full max-w-[420px] flex flex-col justify-center">
+          
+          {/* Mobile Header */}
+          <div ...tf,="" opacity:="" step="" style="{{">= 1 ? 1 : 0,
+            transform: step &gt;= 1 ? 'none' : 'translateY(16px)',
+          }} className="md:hidden flex flex-col items-center text-center mb-10"&gt;
+             <div classname="mb-6 w-16 h-16 rounded-2xl bg-surface-container-high border border-outline-variant flex items-center justify-center">
+<svg fill="none" height="32" viewbox="0 0 48 48" width="32">
+<circle cx="24" cy="24" r="20" stroke="var(--secondary)" strokewidth="2"></circle>
+<ellipse cx="24" cy="24" rx="8" ry="20" stroke="var(--secondary)" strokewidth="2"></ellipse>
+<circle cx="24" cy="24" fill="var(--primary)" r="4"></circle>
+</svg>
+</div>
+<h1 classname="font-display-md text-display-md text-on-surface mb-2">GeoNexus</h1>
+<p classname="font-body-md text-body-md text-on-surface-variant">Secure access portal</p>
+</div>
+<div ...tf,="" opacity:="" step="" style="{{">= 1 ? 1 : 0, transform: step &gt;= 1 ? 'none' : 'translateY(16px)'
+          }} className="hidden md:block mb-8"&gt;
+            <h2 classname="font-headline-lg text-headline-lg text-on-surface mb-2">Sign In</h2>
+<p classname="font-body-md text-body-md text-on-surface-variant">Access your dashboard</p>
+</div>
+<div ${error="" &&="" ''}`}="" 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]'="" ...tf,="" :="" ?="" border="" border-outline-variant="" classname="{`bg-surface-container" key="{shakeKey}" md:p-10="" opacity:="" overflow-hidden="" p-8="" relative="" rounded-2xl="" shadow-2xl="" shakekey="" step="" style="{{">= 2 ? 1 : 0,
+              transform: step &gt;= 2 ? 'none' : 'translateY(24px)',
+            }}
+          &gt;
+            {/* Subtle glow effect inside the card */}
+            <div classname="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-secondary to-transparent opacity-50"></div>
+
+            {error &amp;&amp; (
+              <div classname="flex items-start gap-3 p-4 mb-6 rounded-lg bg-error-container/20 border border-error-container text-error font-body-md text-body-md animate-fade-in">
+<alerticon>
+<span classname="mt-0.5">{error}</span>
+</alerticon></div>
+            )}
+
+            <form classname="flex flex-col gap-6" onsubmit="{handleSubmit}">
+<div classname="flex flex-col gap-2">
+<label classname="font-body-md text-body-md text-on-surface font-medium">Username or Email</label>
+<div classname="relative flex items-center">
+<span classname="absolute left-4 text-on-surface-variant">
+<usericon>
+</usericon></span>
+<input =="" onchange="{e" placeholder="Enter your details" type="text" value="{username}"/> setUsername(e.target.value)}
+                    className="w-full bg-surface border border-outline-variant rounded-lg py-3 pl-12 pr-4 text-on-surface font-body-md focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all placeholder-on-surface-variant/50"
+                    required
+                    autoComplete="username"
+                  /&gt;
+                </div>
+</div>
+<div classname="flex flex-col gap-2">
+<div classname="flex justify-between items-center">
+<label classname="font-body-md text-body-md text-on-surface font-medium">Password</label>
+<link classname="font-body-md text-body-md text-secondary hover:text-secondary-fixed transition-colors font-medium" to="/forgot-password"/>
+                    Forgot?
+                  
+                </div>
+<div classname="relative flex items-center">
+<span classname="absolute left-4 text-on-surface-variant">
+<lockicon>
+</lockicon></span>
+<input 'password'}="" 'text'="" :="" =="" ?="" onchange="{e" placeholder="••••••••" type="{showPass" value="{password}"/> setPassword(e.target.value)}
+                    className="w-full bg-surface border border-outline-variant rounded-lg py-3 pl-12 pr-12 text-on-surface font-body-md focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all placeholder-on-surface-variant/50"
+                    required
+                    autoComplete="current-password"
+                  /&gt;
+                  <button =="" onclick="{()" type="button"> setShowPass(v =&gt; !v)}
+                    className="absolute right-4 text-on-surface-variant hover:text-on-surface transition-colors"
+                  &gt;
+                    <eyeicon open="{showPass}">
+</eyeicon></button>
+</div>
+</div>
+<button classname="relative overflow-hidden w-full bg-secondary text-on-secondary py-3.5 rounded-lg font-headline-sm text-headline-sm font-semibold hover:bg-secondary-fixed transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2" disabled="{loading}" onclick="{handleRipple}" ref="{btnRef}" type="submit">
+                {loading ? &lt;&gt;<loadspinner> Authenticating... : 'Sign In'}
+              </loadspinner></button>
+</form>
+<div classname="flex items-center gap-4 my-8">
+<div classname="flex-1 h-px bg-outline-variant"></div>
+<span classname="font-data-mono text-data-mono text-on-surface-variant uppercase tracking-wider">or</span>
+<div classname="flex-1 h-px bg-outline-variant"></div>
+</div>
+<div classname="flex justify-center w-full [&amp;&gt;div]:w-full">
+<googlelogin =="" onerror="{()" onsuccess="{handleGoogleSuccess}" shape="rectangular" size="large" theme="outline" width="100%"> setError('SSO verification failed')}
+                useOneTap
+              /&gt;
+            </googlelogin></div>
+</div>
+<p ...tf,="" opacity:="" step="" style="{{">= 3 ? 1 : 0, transform: step &gt;= 3 ? 'none' : 'translateY(16px)'
+          }} className="text-center mt-8 font-body-md text-body-md text-on-surface-variant"&gt;
+            New to GeoNexus?{' '}
+            <link classname="text-secondary font-medium hover:text-secondary-fixed transition-colors" to="/register"/>
+              Request access →
+            
+          </p>
+</div>
+</div>
+<style>{`
+        @keyframes ripple {
+          0% { transform: scale(0); opacity: 1; }
+          100% { transform: scale(40); opacity: 0; }
+        }
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+      `}</style>
+    
+  );
+}</div></layout></body></html>

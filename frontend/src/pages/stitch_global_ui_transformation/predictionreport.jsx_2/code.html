@@ -1,0 +1,426 @@
+<html><head></head><body>import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import html2pdf from 'html2pdf.js';
+import { findSuggestion } from '../api/analysis';
+import LocationCompareModal from '../components/Analysis/LocationCompareModal';
+import Layout from '../components/Common/Layout';
+
+/* ── Icons ── */
+const ArrowLeftIcon = () =&gt; <svg fill="none" height="15" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="15"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+const DownloadIcon = () =&gt; <svg fill="none" height="15" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>;
+const ShieldIcon = () =&gt; <svg fill="none" height="18" stroke="currentColor" strokewidth="2" viewbox="0 0 24 24" width="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
+const CheckCircleIcon = () =&gt; <svg fill="none" height="16" stroke="currentColor" strokewidth="2.2" viewbox="0 0 24 24" width="16"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+
+function LoadSpinner() {
+  return (
+    <svg fill="none" height="18" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="18">
+<path 'center'="" 'spin="" 0.75s="" animation:="" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" infinite',="" linear="" style="{{" transformorigin:="" }}=""></path>
+</svg>
+  );
+}
+
+export default function PredictionReport() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [result] = useState(() =&gt; { try { return JSON.parse(sessionStorage.getItem('last_prediction_report') || 'null'); } catch { return null; } });
+  
+  const [downloading, setDownloading] = useState(false);
+  const [reportDate] = useState(() =&gt; new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
+
+  const [searchingSuggestion, setSearchingSuggestion] = useState(false);
+  const [searchedSuggestion, setSearchedSuggestion] = useState(false);
+  const [suggestion, setSuggestion] = useState(() =&gt; { try { return JSON.parse(sessionStorage.getItem('better_site_suggestion') || 'null'); } catch { return null; } });
+
+  const [showCompareModal, setShowCompareModal] = useState(false);
+
+  useEffect(() =&gt; {
+    if (suggestion) setSearchedSuggestion(true);
+  }, [suggestion]);
+
+  if (!result) {
+    return (
+      <layout>
+<div '16px',="" '24px'="" '60vh',="" 'center',="" 'column',="" 'flex',="" 'var(--text-primary)',="" alignitems:="" color:="" display:="" flexdirection:="" gap:="" justifycontent:="" minheight:="" padding:="" style="{{" textalign:="" }}="">
+<h2 '20px'="" '850',="" 'var(--font-display)',="" fontfamily:="" fontsize:="" fontweight:="" style="{{" }}="">No Suitability Result Found</h2>
+<p '14px',="" '380px'="" 'var(--text-muted)',="" color:="" fontsize:="" maxwidth:="" style="{{" }}="">
+            Please select a coordinate location and complete the suitability scoring audit first.
+          </p>
+<button =="" onclick="{()"> navigate('/analysis')} className="bg-secondary-container text-on-secondary-container font-semibold rounded-lg hover:bg-secondary transition-colors" style={{ padding: '12px 24px' }}&gt;
+            Back to Map view
+          </button>
+</div>
+</layout>
+    );
+  }
+
+  const {
+    latitude,
+    longitude,
+    industry_type,
+    district,
+    mcda_final_suitability_score,
+    nearest_highway_ref,
+    highway_corridor_bonus,
+    nearest_river_name,
+    river_reliability_bonus,
+    criteria_breakdown
+  } = result;
+
+  const scoreNum = Number(mcda_final_suitability_score || 0);
+  let badgeColor = '#22D3EE', badgeBg = 'rgba(34,211,238,0.06)', badgeBorder = 'rgba(34,211,238,0.22)', categoryLabel = 'Good';
+  if (scoreNum &gt;= 70) { badgeColor = '#10B981'; badgeBg = 'rgba(16,185,129,0.06)'; badgeBorder = 'rgba(16,185,129,0.22)'; categoryLabel = 'Excellent'; }
+  else if (scoreNum &lt; 45) { badgeColor = '#F43F5E'; badgeBg = 'rgba(244,63,94,0.06)'; badgeBorder = 'rgba(244,63,94,0.22)'; categoryLabel = 'Poor'; }
+
+  const handlePdfExport = () =&gt; {
+    const element = document.getElementById('simple-clean-pdf-template');
+    if (!element) return;
+    setDownloading(true);
+
+    const filename = `GeoNexus_Suitability_Report_${industry_type.replace(/\s+/g, '_')}_${district.replace(/\s+/g, '_')}.pdf`;
+    const opt = {
+      margin: 15,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2.5, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().from(element).set(opt).save()
+      .then(() =&gt; setDownloading(false))
+      .catch(() =&gt; setDownloading(false));
+  };
+
+  const handleFindSuggestion = async () =&gt; {
+    if (searchingSuggestion) return;
+    setSearchingSuggestion(true);
+    try {
+      const res = await findSuggestion({
+        latitude: latitude,
+        longitude: longitude,
+        industryType: industry_type,
+        currentScore: scoreNum,
+      });
+      setSuggestion(res || null);
+      if (res) {
+        sessionStorage.setItem('better_site_suggestion', JSON.stringify(res));
+      } else {
+        sessionStorage.removeItem('better_site_suggestion');
+      }
+      setSearchedSuggestion(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSearchingSuggestion(false);
+    }
+  };
+
+  const sortedCriteria = criteria_breakdown ? Object.entries(criteria_breakdown).sort((a, b) =&gt; (b[1].score_100 || 0) - (a[1].score_100 || 0)) : [];
+
+  return (
+    <layout hidenav="{true}">
+<div '100vh',="" 'column'="" 'flex',="" classname="bg-background text-on-background" display:="" flexdirection:="" minheight:="" style="{{" }}="">
+        
+        {/* Sub-header Navigation */}
+        <header '72px'="" classname="no-print border-b border-surface-variant bg-surface-container-low/90 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-4 lg:px-10" height:="" style="{{" }}="">
+<div '12px'="" 'center',="" 'flex',="" alignitems:="" display:="" gap:="" style="{{" }}="">
+<button =="" onclick="{()"> {
+                if (location.state?.from === '/analysis/suggestion') {
+                  navigate('/analysis/suggestion');
+                } else {
+                  navigate('/analysis/result');
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant hover:border-outline transition-colors text-sm font-semibold"
+            &gt;
+              <arrowlefticon> Back
+            </arrowlefticon></button>
+<button =="" onclick="{()"> navigate('/home')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface text-on-surface-variant border border-outline-variant hover:bg-surface-variant hover:text-on-surface transition-colors text-sm font-semibold"
+            &gt;
+              🏠 Home
+            </button>
+</div>
+<button 0.7="" 1="" :="" ?="" classname="bg-secondary-container text-on-secondary-container inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-secondary transition-colors" disabled="{downloading}" downloading="" onclick="{handlePdfExport}" opacity:="" style="{{" }}="">
+            {downloading ? &lt;&gt;<loadspinner> Exporting... : &lt;&gt;<downloadicon> Download Report}
+          </downloadicon></loadspinner></button>
+</header>
+
+        {/* Audit Web View */}
+        <main '0="" '100%',="" '40px="" '960px',="" 1,="" 24px',="" auto',="" flex:="" margin:="" maxwidth:="" padding:="" style="{{" width:="" }}="">
+<div classname="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl overflow-hidden p-8 lg:p-10">
+            
+            {/* Header info */}
+            <div classname="flex justify-between items-start border-b border-surface-variant pb-6 mb-8 flex-wrap gap-4">
+<div>
+<div '12px',="" '8px'="" 'center',="" 'flex',="" alignitems:="" display:="" gap:="" marginbottom:="" style="{{" }}="">
+<div classname="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary-container to-tertiary-container flex items-center justify-center text-on-secondary-container shadow-lg">
+<shieldicon>
+</shieldicon></div>
+<span classname="font-display-lg text-2xl font-black tracking-tight text-on-surface">
+                    GeoNexus <span classname="bg-clip-text text-transparent bg-gradient-to-r from-secondary to-tertiary">AI</span>
+</span>
+</div>
+<p classname="text-xs font-bold uppercase tracking-widest text-on-surface-variant m-0">
+                  Geospatial Intelligence &amp; Site Suitability Audit
+                </p>
+</div>
+<div 'right'="" style="{{" textalign:="" }}="">
+<div classname="inline-block px-3 py-1 bg-surface-container-high border border-outline-variant text-on-surface text-xs font-mono rounded-full mb-2">Audit ID: #GX-{Math.floor(100000 + Math.random() * 900000)}</div>
+<p classname="text-xs text-on-surface-variant m-0 font-medium">Date: {reportDate}</p>
+</div>
+</div>
+
+            {/* Overview section */}
+            <div classname="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface border border-outline-variant rounded-xl p-6 mb-10 shadow-sm">
+<div classname="flex flex-col justify-center">
+<span classname="text-xs font-black tracking-widest text-secondary uppercase mb-2">
+                  Audited Siting Location
+                </span>
+<h1 classname="font-display-md text-3xl font-black m-0 mb-4 text-on-surface tracking-tight">
+                  {district}
+                </h1>
+<div classname="flex flex-col gap-2 text-sm text-on-surface-variant">
+<div classname="flex items-center gap-2">
+<span classname="w-24 font-semibold">Industry Sector:</span>
+<span classname="text-on-surface font-bold bg-surface-container-high px-2 py-1 rounded-md">{industry_type}</span>
+</div>
+                  {latitude != null &amp;&amp; longitude != null &amp;&amp; (
+                    <div classname="flex items-center gap-2">
+<span classname="w-24 font-semibold">Coordinates:</span>
+<code classname="text-secondary-fixed bg-surface-container-highest px-2 py-1 rounded-md font-data-mono text-xs shadow-inner">
+                        {latitude.toFixed(5)}° N, {longitude.toFixed(5)}° E
+                      </code>
+</div>
+                  )}
+                </div>
+</div>
+<div ${badgeborder}`="" `1px="" background:="" badgebg,="" border:="" classname="flex flex-col items-center justify-center rounded-xl p-6 relative overflow-hidden group" solid="" style="{{" }}="">
+                {/* Decorative background glow */}
+                <div badgecolor="" classname="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-current to-transparent pointer-events-none" color:="" style="{{" }}=""></div>
+<span badgecolor="" classname="text-xs font-black uppercase tracking-widest relative z-10" color:="" style="{{" }}="">
+                  Suitability Score
+                </span>
+<div badgecolor="" classname="font-display-lg text-5xl font-black leading-none my-3 tracking-tighter relative z-10 flex items-baseline gap-1" color:="" style="{{" }}="">
+                  {scoreNum.toFixed(1)} <span classname="text-lg font-bold opacity-70">/100</span>
+</div>
+<div '#000'="" background:="" badgecolor,="" classname="px-4 py-1.5 rounded-full font-black text-sm relative z-10 shadow-lg" color:="" style="{{" }}="">
+                  {categoryLabel}
+                </div>
+</div>
+</div>
+
+            {/* Infrastructure Linkages */}
+            <div classname="mb-10">
+<h3 classname="font-display-sm text-lg font-black mb-4 flex items-center gap-2 tracking-tight text-on-surface">
+<span classname="text-secondary"><checkcircleicon></checkcircleicon></span> Spatial Logistics &amp; Water Infrastructure
+              </h3>
+<div classname="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div classname="p-5 rounded-xl bg-surface-container border border-outline-variant hover:border-secondary-container/50 transition-colors shadow-sm relative overflow-hidden group">
+<div classname="absolute top-0 right-0 w-24 h-24 bg-secondary/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+<span classname="text-xs font-bold text-on-surface-variant uppercase tracking-wider block mb-1">Highway Logistics Link</span>
+<p classname="text-lg font-black m-0 mb-2 text-on-surface">{nearest_highway_ref || "NH Corridor"}</p>
+<div classname="inline-flex items-center gap-1.5 bg-secondary-container/10 border border-secondary-container/20 px-2.5 py-1 rounded-md">
+<div classname="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+<p classname="text-xs font-bold text-secondary m-0">Corridor Bonus: +{(highway_corridor_bonus * 100).toFixed(0)}%</p>
+</div>
+</div>
+<div classname="p-5 rounded-xl bg-surface-container border border-outline-variant hover:border-tertiary-container/50 transition-colors shadow-sm relative overflow-hidden group">
+<div classname="absolute top-0 right-0 w-24 h-24 bg-tertiary/5 rounded-bl-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+<span classname="text-xs font-bold text-on-surface-variant uppercase tracking-wider block mb-1">Water Network Access</span>
+<p classname="text-lg font-black m-0 mb-2 text-on-surface">{nearest_river_name || "Regional River Basin"}</p>
+<div classname="inline-flex items-center gap-1.5 bg-tertiary-container/20 border border-tertiary-container/30 px-2.5 py-1 rounded-md">
+<div classname="w-1.5 h-1.5 rounded-full bg-tertiary"></div>
+<p classname="text-xs font-bold text-tertiary m-0">Reliability Index: {(river_reliability_bonus * 100).toFixed(0)}%</p>
+</div>
+</div>
+</div>
+</div>
+
+            {/* Criteria Breakdown */}
+            {sortedCriteria.length &gt; 0 &amp;&amp; (
+              <div classname="mb-8">
+<h3 classname="font-display-sm text-lg font-black mb-4 tracking-tight text-on-surface flex items-center gap-2">
+<span classname="text-surface-variant">⚖️</span> Multi-Criteria Evaluation Matrix (MCDA Breakdown)
+                </h3>
+<div classname="border border-outline-variant rounded-xl overflow-hidden bg-surface shadow-sm">
+                  
+                      {sortedCriteria.map(([crit, v], idx) =&gt; (
+                        
+                      ))}
+                    <table classname="w-full border-collapse text-sm">
+<thead>
+<tr classname="bg-surface-container-high border-b border-outline-variant text-left">
+<th classname="py-3 px-4 font-black text-on-surface-variant uppercase text-xs tracking-wider">Evaluation Metric</th>
+<th classname="py-3 px-4 font-black text-on-surface-variant uppercase text-xs tracking-wider text-right">Calculated Score</th>
+<th classname="py-3 px-4 font-black text-on-surface-variant uppercase text-xs tracking-wider text-right">Impact Weight</th>
+</tr>
+</thead>
+<tbody classname="divide-y divide-outline-variant/50"><tr classname="hover:bg-surface-container-highest/30 transition-colors" key="{crit}">
+<td classname="py-3.5 px-4 font-bold text-on-surface capitalize">
+                            {crit.replace(/_/g, ' ')}
+                          </td>
+<td classname="py-3.5 px-4 text-right">
+<div classname="inline-flex items-center justify-end w-full gap-2">
+                              {/* Mini progress bar for score visual */}
+                              <div classname="hidden sm:block w-16 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div 0}%`="" `${v?.score_100="" classname="h-full bg-secondary-fixed" style="{{" width:="" ||="" }}=""></div>
+</div>
+<span classname="font-data-mono font-bold text-secondary-fixed">
+                                {(v?.score_100 || 0).toFixed(0)} <span classname="text-on-surface-variant/50 font-sans text-xs">/ 100</span>
+</span>
+</div>
+</td>
+<td classname="py-3.5 px-4 text-right">
+<span classname="font-data-mono font-medium text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+                              {((v?.weight || 0) * 100).toFixed(0)}%
+                            </span>
+</td>
+</tr></tbody>
+</table>
+</div>
+</div>
+            )}
+
+            {/* Footer */}
+            <div classname="mt-8 pt-6 border-t border-dashed border-outline-variant flex justify-between text-xs font-medium text-on-surface-variant uppercase tracking-wider">
+<span>GeoNexus AI Geospatial Platform</span>
+<span>Confidential Siting Audit Summary</span>
+</div>
+
+            {/* Suggestion block */}
+            {!searchedSuggestion &amp;&amp; !searchingSuggestion &amp;&amp; (
+              <div classname="mt-8 p-5 rounded-xl bg-surface-container border border-secondary/20 flex items-center justify-between gap-4 flex-wrap shadow-inner relative overflow-hidden">
+<div classname="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div>
+<div classname="text-xs font-black text-secondary uppercase tracking-widest flex items-center gap-1.5">
+<span classname="text-lg">💡</span> Location Optimization Engine
+                  </div>
+<div classname="text-sm text-on-surface-variant font-medium mt-1.5 max-w-lg">
+                    Scan GIDC industrial corridors and substation proximity inside 20 km for an optimized coordinate location.
+                  </div>
+</div>
+<button classname="bg-secondary text-on-secondary font-bold px-5 py-2.5 rounded-lg hover:bg-secondary-fixed transition-colors shadow-lg shadow-secondary/20 whitespace-nowrap text-sm" onclick="{handleFindSuggestion}">
+                  Suggest Nearest Better Location
+                </button>
+</div>
+            )}
+
+            {searchingSuggestion &amp;&amp; (
+              <div classname="mt-8 p-5 rounded-xl bg-surface border border-secondary/30 flex items-center justify-center gap-3 text-secondary font-bold text-sm shadow-inner relative overflow-hidden">
+<div classname="absolute inset-0 bg-secondary/5 animate-pulse"></div>
+<span classname="relative z-10 flex items-center gap-3"><loadspinner> Searching GIDC industrial corridors and substation proximity within 20 km...</loadspinner></span>
+</div>
+            )}
+
+            {searchedSuggestion &amp;&amp; suggestion &amp;&amp; suggestion.mcda_final_suitability_score &amp;&amp; (
+              <div classname="mt-8 p-5 rounded-xl bg-surface-container border border-[#10B981]/30 flex items-center justify-between gap-4 flex-wrap shadow-inner relative overflow-hidden">
+<div classname="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+<div>
+<div classname="text-xs font-black text-[#10B981] uppercase tracking-widest flex items-center gap-1.5">
+<span classname="text-lg">💡</span> Optimized Siting Identified
+                  </div>
+<div classname="text-sm text-on-surface-variant font-medium mt-1.5 max-w-lg">
+                    Alternative location ({suggestion.district || 'Gujarat'}) offers a higher suitability score of <b classname="text-on-surface font-black px-1.5 py-0.5 bg-surface rounded ml-1 text-[#10B981]">{Number(suggestion.mcda_final_suitability_score).toFixed(1)}/100</b>.
+                  </div>
+</div>
+<div classname="flex gap-3 flex-wrap">
+<button =="" onclick="{()"> navigate('/analysis/suggestion')}
+                    className="bg-[#10B981] text-black font-bold px-4 py-2 rounded-lg hover:bg-[#059669] transition-colors shadow-lg shadow-[#10B981]/20 text-sm"
+                  &gt;
+                    View Report
+                  </button>
+<button =="" onclick="{()"> setShowCompareModal(true)}
+                    className="bg-surface text-secondary border border-secondary/40 font-bold px-4 py-2 rounded-lg hover:bg-surface-variant transition-colors text-sm"
+                  &gt;
+                    Compare
+                  </button>
+</div>
+</div>
+            )}
+          </div>
+</main>
+
+        {showCompareModal &amp;&amp; suggestion &amp;&amp; (
+          <locationcomparemodal =="" isopen="{showCompareModal}" onclose="{()"> setShowCompareModal(false)}
+            selectedData={result}
+            suggestionData={suggestion}
+            onViewMap={() =&gt; navigate('/analysis/suggestion-map')}
+          /&gt;
+        )}
+
+        {/* ── HIDDEN CLEAN WHITE PRINTING TEMPLATE ── */}
+        <div '-9999px'="" '-9999px',="" 'absolute',="" left:="" position:="" style="{{" top:="" }}="">
+<div '#1e293b',="" '#ffffff',="" '32px="" '700px',="" 'arial,="" 36px',="" background:="" color:="" fontfamily:="" id="simple-clean-pdf-template" padding:="" sans-serif'="" style="{{" width:="" }}="">
+<div #e2e8f0',="" '12px',="" '20px',="" '2px="" 'flex',="" 'space-between'="" borderbottom:="" display:="" justifycontent:="" marginbottom:="" paddingbottom:="" solid="" style="{{" }}="">
+<div>
+<h2 '#0f172a',="" '20px',="" 'bold'="" 0,="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">GeoNexus AI Report</h2>
+<p '#64748b'="" '11px',="" '2px="" 0="" 0',="" color:="" fontsize:="" margin:="" style="{{" }}="">Land Suitability Evaluation Audit</p>
+</div>
+<div '#64748b'="" '11px',="" 'right',="" color:="" fontsize:="" style="{{" textalign:="" }}="">
+<div>Date: {reportDate}</div>
+</div>
+</div>
+<div #e2e8f0',="" '#f8fafc',="" '16px',="" '1px="" '20px',="" '6px',="" 'center'="" 'flex',="" 'space-between',="" alignitems:="" background:="" border:="" borderradius:="" display:="" justifycontent:="" marginbottom:="" padding:="" solid="" style="{{" }}="">
+<div>
+<div '#64748b',="" '10px',="" 'bold',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" style="{{" texttransform:="" }}="">Target Siting Region</div>
+<div '#0f172a',="" '18px',="" '2px="" 'bold',="" 0'="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">{district}</div>
+<div '#475569'="" '12px',="" color:="" fontsize:="" style="{{" }}="">
+                  Sector: {industry_type} {latitude != null &amp;&amp; `(${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E)`}
+                </div>
+</div>
+<div 'right'="" style="{{" textalign:="" }}="">
+<div '#64748b',="" '10px',="" 'bold',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" style="{{" texttransform:="" }}="">Suitability score</div>
+<div '#0f172a'="" '24px',="" 'bold',="" color:="" fontsize:="" fontweight:="" style="{{" }}="">{scoreNum.toFixed(1)} / 100</div>
+</div>
+</div>
+<div '20px'="" marginbottom:="" style="{{" }}="">
+<h4 '#0f172a',="" '0="" '12px',="" 'uppercase'="" 0="" 0',="" 8px="" color:="" fontsize:="" margin:="" style="{{" texttransform:="" }}="">Key Infrastructure Corridors</h4>
+<table '100%',="" '11px',="" 'collapse'="" bordercollapse:="" fontsize:="" style="{{" width:="" }}="">
+<tbody>
+<tr>
+<td #e2e8f0',="" '#f8fafc',="" '1px="" '50%'="" '8px',="" background:="" border:="" padding:="" solid="" style="{{" width:="" }}="">
+<strong>Highway Link:</strong> {nearest_highway_ref || "NH Corridor"} (+{(highway_corridor_bonus * 100).toFixed(0)}%)
+                    </td>
+<td #e2e8f0',="" '#f8fafc',="" '1px="" '50%'="" '8px',="" background:="" border:="" padding:="" solid="" style="{{" width:="" }}="">
+<strong>Water Access:</strong> {nearest_river_name || "Regional River Basin"} ({(river_reliability_bonus * 100).toFixed(0)}%)
+                    </td>
+</tr>
+</tbody>
+</table>
+</div>
+
+            {sortedCriteria.length &gt; 0 &amp;&amp; (
+              <div '20px'="" marginbottom:="" style="{{" }}="">
+<h4 '#0f172a',="" '0="" '12px',="" 'uppercase'="" 0="" 0',="" 8px="" color:="" fontsize:="" margin:="" style="{{" texttransform:="" }}="">Evaluation Metrics Breakdown</h4>
+                
+                    {sortedCriteria.map(([crit, v], idx) =&gt; (
+                      
+                    ))}
+                  <table '100%',="" '11px'="" 'collapse',="" bordercollapse:="" fontsize:="" style="{{" width:="" }}="">
+<thead>
+<tr #cbd5e1',="" '#f1f5f9',="" '1.5px="" 'left'="" background:="" borderbottom:="" solid="" style="{{" textalign:="" }}="">
+<th '6px="" 10px'="" padding:="" style="{{" }}="">Metric Description</th>
+<th '6px="" 'right'="" 10px',="" padding:="" style="{{" textalign:="" }}="">Calculated Score</th>
+<th '6px="" 'right'="" 10px',="" padding:="" style="{{" textalign:="" }}="">Impact Weight</th>
+</tr>
+</thead>
+<tbody><tr #e2e8f0',="" %="" '#f8fafc'="" '#ffffff'="" '1px="" 0="" 2="==" :="" ?="" background:="" borderbottom:="" idx="" key="{crit}" solid="" style="{{" }}="">
+<td '6px="" 'capitalize'="" 10px',="" padding:="" style="{{" texttransform:="" }}="">{crit.replace(/_/g, ' ')}</td>
+<td '6px="" 'bold'="" 'right',="" 10px',="" fontweight:="" padding:="" style="{{" textalign:="" }}="">{(v?.score_100 || 0).toFixed(0)} / 100</td>
+<td '#64748b'="" '6px="" 'right',="" 10px',="" color:="" padding:="" style="{{" textalign:="" }}="">{((v?.weight || 0) * 100).toFixed(0)}%</td>
+</tr></tbody>
+</table>
+</div>
+            )}
+
+            <div #e2e8f0',="" '#94a3b8',="" '10px',="" '1px="" '8px',="" 'flex',="" 'space-between'="" bordertop:="" color:="" display:="" fontsize:="" justifycontent:="" paddingtop:="" solid="" style="{{" }}="">
+<span>GeoNexus AI Geospatial Siting Suite</span>
+<span>Official Siting Audit Summary</span>
+</div>
+</div>
+</div>
+</locationcomparemodal></div>
+</layout>
+  );
+}</body></html>

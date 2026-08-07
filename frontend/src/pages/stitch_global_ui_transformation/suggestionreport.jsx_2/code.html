@@ -1,0 +1,358 @@
+<html><head></head><body>import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import html2pdf from 'html2pdf.js';
+import { useAuth } from '../contexts/AuthContext';
+import LocationCompareModal from '../components/Analysis/LocationCompareModal';
+import Layout from '../components/Common/Layout';
+
+/* ── Icons ── */
+const ArrowLeftIcon = () =&gt; <svg fill="none" height="15" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="15"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+const DownloadIcon = () =&gt; <svg fill="none" height="15" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>;
+const ShieldIcon = () =&gt; <svg fill="none" height="18" stroke="currentColor" strokewidth="2" viewbox="0 0 24 24" width="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>;
+const CheckCircleIcon = () =&gt; <svg fill="none" height="16" stroke="currentColor" strokewidth="2.2" viewbox="0 0 24 24" width="16"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
+
+function LoadSpinner() {
+  return (
+    <svg fill="none" height="18" stroke="currentColor" strokewidth="2.5" viewbox="0 0 24 24" width="18">
+<path 'center'="" 'spin="" 0.75s="" animation:="" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" infinite',="" linear="" style="{{" transformorigin:="" }}=""></path>
+</svg>
+  );
+}
+
+export default function SuggestionReport() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [selectedReport] = useState(() =&gt; { try { return JSON.parse(sessionStorage.getItem('last_prediction_report') || 'null'); } catch { return null; } });
+  const [suggestion] = useState(() =&gt; { try { return JSON.parse(sessionStorage.getItem('better_site_suggestion') || 'null'); } catch { return null; } });
+  
+  const [downloading, setDownloading] = useState(false);
+  const [reportDate] = useState(() =&gt; new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }));
+  const [showCompareModal, setShowCompareModal] = useState(false);
+
+  if (!suggestion) {
+    return (
+      <layout>
+<div '16px',="" '24px'="" '60vh',="" 'center',="" 'column',="" 'flex',="" 'var(--text-primary)',="" alignitems:="" color:="" display:="" flexdirection:="" gap:="" justifycontent:="" minheight:="" padding:="" style="{{" textalign:="" }}="">
+<h2 '#d4e4fa'="" '20px',="" '850',="" 'var(--font-display)',="" color:="" fontfamily:="" fontsize:="" fontweight:="" style="{{" }}="">No Optimized Site Found</h2>
+<p '#909096',="" '14px',="" '380px'="" color:="" fontsize:="" maxwidth:="" style="{{" }}="">
+            Please select a coordinate location and complete the suitability scoring audit first.
+          </p>
+<button =="" onclick="{()"> navigate('/analysis')} style={{ padding: '12px 24px', background: '#2fd9f4', color: '#051424', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}&gt;
+            Back to Map view
+          </button>
+</div>
+</layout>
+    );
+  }
+
+  const {
+    latitude,
+    longitude,
+    industry_type,
+    district,
+    mcda_final_suitability_score,
+    nearest_highway_ref,
+    highway_corridor_bonus,
+    nearest_river_name,
+    river_reliability_bonus,
+    criteria_breakdown
+  } = suggestion;
+
+  const scoreNum = Number(mcda_final_suitability_score || 0);
+  let badgeColor = '#5de6ff', badgeBg = 'rgba(93, 230, 255, 0.1)', badgeBorder = 'rgba(93, 230, 255, 0.3)', categoryLabel = 'Excellent';
+  if (scoreNum &lt; 70 &amp;&amp; scoreNum &gt;= 45) { badgeColor = '#ddb7ff'; badgeBg = 'rgba(221, 183, 255, 0.1)'; badgeBorder = 'rgba(221, 183, 255, 0.3)'; categoryLabel = 'Good'; }
+  else if (scoreNum &lt; 45) { badgeColor = '#ffb4ab'; badgeBg = 'rgba(255, 180, 171, 0.1)'; badgeBorder = 'rgba(255, 180, 171, 0.3)'; categoryLabel = 'Poor'; }
+
+  const handlePdfExport = () =&gt; {
+    const element = document.getElementById('simple-clean-suggestion-pdf-template');
+    if (!element) return;
+    setDownloading(true);
+
+    const filename = `GeoNexus_Optimized_Siting_Report_${industry_type.replace(/\s+/g, '_')}_${district.replace(/\s+/g, '_')}.pdf`;
+    const opt = {
+      margin: 15,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2.5, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().from(element).set(opt).save()
+      .then(() =&gt; setDownloading(false))
+      .catch(() =&gt; setDownloading(false));
+  };
+
+  const sortedCriteria = criteria_breakdown ? Object.entries(criteria_breakdown).sort((a, b) =&gt; (b[1].score_100 || 0) - (a[1].score_100 || 0)) : [];
+
+  return (
+    <layout hidenav="{true}">
+<div '#051424',="" '#d4e4fa',="" '100vh',="" 'column',="" 'flex',="" 'inter,="" background:="" color:="" display:="" flexdirection:="" fontfamily:="" minheight:="" sans-serif'="" style="{{" }}="">
+        
+        {/* Sub-header Navigation */}
+        <header '0="" '1px="" '64px',="" 'blur(20px)',="" 'center',="" 'flex',="" 'rgba(5,="" 'space-between',="" 'sticky',="" 0,="" 0.85)',="" 100,="" 20,="" 36,="" 40px)',="" 4vw,="" alignitems:="" backdropfilter:="" background:="" borderbottom:="" clamp(16px,="" classname="no-print" display:="" height:="" justifycontent:="" padding:="" position:="" rgba(255,255,255,0.1)',="" solid="" style="{{" top:="" zindex:="" }}="">
+<div '12px'="" 'center',="" 'flex',="" alignitems:="" display:="" gap:="" style="{{" }}="">
+<button =="" onclick="{()"> navigate('/analysis/result')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                padding: '8px 16px', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#c7c6cc', fontWeight: '700', fontSize: '13px',
+                cursor: 'pointer', transition: 'all 0.2s',
+              }}
+              onMouseEnter={e =&gt; { e.currentTarget.style.borderColor = 'rgba(47, 217, 244, 0.4)'; e.currentTarget.style.color = '#2fd9f4'; e.currentTarget.style.boxShadow = '0 0 10px rgba(47,217,244,0.2)'; }}
+              onMouseLeave={e =&gt; { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#c7c6cc'; e.currentTarget.style.boxShadow = 'none'; }}
+            &gt;
+              <arrowlefticon> Back
+            </arrowlefticon></button>
+<button =="" onclick="{()"> navigate('/home')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                color: '#909096', fontWeight: '700', fontSize: '13px',
+                cursor: 'pointer', transition: 'all 0.2s',
+              }}
+              onMouseEnter={e =&gt; { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#d4e4fa'; }}
+              onMouseLeave={e =&gt; { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#909096'; }}
+            &gt;
+              🏠 Home
+            </button>
+</div>
+<button '#00363e',="" '#2fd9f4',="" '0="" '12px',="" '13px',="" '6px',="" '8px="" 'bold',="" 'center',="" 'inline-flex',="" 'none',="" 'pointer',="" 0.7="" 1,="" 12px="" 20px',="" 4px="" :="" ?="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" color:="" cursor:="" disabled="{downloading}" display:="" downloading="" fontsize:="" fontweight:="" gap:="" onclick="{handlePdfExport}" opacity:="" padding:="" rgba(47,217,244,0.3)'="" style="{{" }}="">
+            {downloading ? &lt;&gt;<loadspinner> Exporting... : &lt;&gt;<downloadicon> Download Report}
+          </downloadicon></loadspinner></button>
+</header>
+
+        {/* Audit Web View */}
+        <main '0="" '100%',="" '900px',="" 'clamp(24px,="" 1,="" 24px)',="" 40px)="" 4vw,="" auto',="" clamp(16px,="" flex:="" margin:="" maxwidth:="" padding:="" style="{{" width:="" }}="">
+<div #0d1c2d="" #122131="" '0="" '16px',="" '1px="" 'blur(10px)'="" 'clamp(24px,="" 'hidden',="" 'linear-gradient(180deg,="" -10px="" 0="" 0%,="" 100%)',="" 1px="" 20px="" 40px="" 40px)',="" 5vw,="" backdropfilter:="" background:="" border:="" borderradius:="" boxshadow:="" inset="" overflow:="" padding:="" rgba(0,0,0,0.5),="" rgba(255,255,255,0.1)',="" solid="" style="{{" }}="">
+            
+            {/* Header info */}
+            <div '16px'="" '1px="" '24px',="" '28px',="" 'flex',="" 'flex-start',="" 'space-between',="" 'wrap',="" alignitems:="" borderbottom:="" display:="" flexwrap:="" gap:="" justifycontent:="" marginbottom:="" paddingbottom:="" rgba(255,255,255,0.1)',="" solid="" style="{{" }}="">
+<div>
+<div '10px',="" '6px'="" 'center',="" 'flex',="" alignitems:="" display:="" gap:="" marginbottom:="" style="{{" }}="">
+<div #2fd9f4,="" #ddb7ff)',="" '#051424'="" '10px',="" '36px',="" 'center',="" 'flex',="" 'linear-gradient(135deg,="" alignitems:="" background:="" borderradius:="" color:="" display:="" height:="" justifycontent:="" style="{{" width:="" }}="">
+<shieldicon>
+</shieldicon></div>
+<span '#d4e4fa'="" '-0.02em',="" '24px',="" '900',="" color:="" fontsize:="" fontweight:="" letterspacing:="" style="{{" }}="">
+                    GeoNexus <span #2fd9f4,="" #ddb7ff)',="" 'linear-gradient(135deg,="" 'text',="" 'transparent'="" background:="" style="{{" webkitbackgroundclip:="" webkittextfillcolor:="" }}="">AI</span>
+</span>
+</div>
+<p '#909096',="" '0.08em',="" '11px',="" '750',="" 'uppercase',="" 0="" color:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" style="{{" texttransform:="" }}="">
+                  Optimized Siting Recommendation Audit (Nearby Radius)
+                </p>
+</div>
+<div 'right'="" style="{{" textalign:="" }}="">
+<div '#5de6ff',="" '12px',="" '1px="" '20px',="" '4px="" '6px',="" 'bold'="" 'inline-block',="" 'rgba(93,="" 0.1)',="" 0.3)',="" 10px',="" 230,="" 255,="" background:="" border:="" borderradius:="" color:="" display:="" fontsize:="" fontweight:="" marginbottom:="" padding:="" rgba(93,="" solid="" style="{{" }}="">Suggestion ID: #SUG-{Math.floor(100000 + Math.random() * 900000)}</div>
+<p '#909096',="" '12px',="" 0="" color:="" fontsize:="" margin:="" style="{{" }}="">Date: {reportDate}</p>
+</div>
+</div>
+
+            {/* Overview section */}
+            <div '12px',="" '1px="" '20px',="" '24px',="" '32px',="" 'grid',="" 'inset="" 'repeat(auto-fit,="" 'rgba(255,255,255,0.03)',="" 0="" 1fr))',="" 1px="" background:="" border:="" borderradius:="" boxshadow:="" display:="" gap:="" gridtemplatecolumns:="" marginbottom:="" minmax(240px,="" padding:="" rgba(255,255,255,0.05)'="" rgba(255,255,255,0.1)',="" solid="" style="{{" }}="">
+<div>
+<span '#2fd9f4',="" '0.08em',="" '10.5px',="" '800',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" letterspacing:="" style="{{" texttransform:="" }}="">
+                  Optimized Siting Location
+                </span>
+<h1 '#d4e4fa',="" '-0.02em'="" '26px',="" '4px="" '900',="" 0="" 10px',="" color:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" style="{{" }}="">
+                  {district}
+                </h1>
+<div '#c7c6cc'="" '13px',="" '4px',="" 'column',="" 'flex',="" color:="" display:="" flexdirection:="" fontsize:="" gap:="" style="{{" }}="">
+<div><strong>Target Sector:</strong> <span '#d4e4fa',="" '700'="" color:="" fontweight:="" style="{{" }}="">{industry_type}</span></div>
+                  {latitude != null &amp;&amp; longitude != null &amp;&amp; (
+                    <div><strong>Map Coordinates:</strong> <code '2px="" '4px'="" 'jetbrains="" 'rgba(0,0,0,0.3)',="" 6px',="" background:="" borderradius:="" fontfamily:="" mono,="" monospace',="" padding:="" style="{{" }}="">{latitude.toFixed(5)}° N, {longitude.toFixed(5)}° E</code></div>
+                  )}
+                </div>
+</div>
+<div ${badgebg}`="" ${badgeborder}`,="" '12px',="" '16px',="" 'center',="" 'column',="" 'flex',="" 0="" 20px="" `0="" `1px="" alignitems:="" background:="" badgebg,="" border:="" borderradius:="" boxshadow:="" display:="" flexdirection:="" justifycontent:="" padding:="" solid="" style="{{" }}="">
+<span '0.08em'="" '10.5px',="" '800',="" 'uppercase',="" badgecolor,="" color:="" fontsize:="" fontweight:="" letterspacing:="" style="{{" texttransform:="" }}="">
+                  Optimized Score
+                </span>
+<div '-0.02em'="" '40px',="" '6px="" '950',="" 0="" 1,="" 4px',="" badgecolor,="" color:="" fontsize:="" fontweight:="" letterspacing:="" lineheight:="" margin:="" style="{{" }}="">
+                  {scoreNum.toFixed(1)} <span '16px',="" '600',="" 0.8="" fontsize:="" fontweight:="" opacity:="" style="{{" }}="">/100</span>
+</div>
+<div '#051424',="" '12px'="" '4px="" '850',="" '9999px',="" 14px',="" background:="" badgecolor,="" borderradius:="" color:="" fontsize:="" fontweight:="" padding:="" style="{{" }}="">
+                  {categoryLabel}
+                </div>
+</div>
+</div>
+
+            {/* Infrastructure Linkages */}
+            <div '32px'="" marginbottom:="" style="{{" }}="">
+<h3 '#d4e4fa'="" '-0.01em',="" '14px',="" '15px',="" '850',="" '8px',="" 'center',="" 'flex',="" alignitems:="" color:="" display:="" fontsize:="" fontweight:="" gap:="" letterspacing:="" marginbottom:="" style="{{" }}="">
+<checkcircleicon> Spatial Logistics &amp; Water Infrastructure
+              </checkcircleicon></h3>
+<div '16px'="" 'grid',="" 'repeat(auto-fit,="" 1fr))',="" display:="" gap:="" gridtemplatecolumns:="" minmax(200px,="" style="{{" }}="">
+<div '12px',="" '16px',="" '1px="" 'rgba(47,="" 0.05)',="" 0.2)'="" 217,="" 244,="" background:="" border:="" borderradius:="" padding:="" rgba(47,="" solid="" style="{{" }}="">
+<span '#2fd9f4',="" '11px',="" '700',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" style="{{" texttransform:="" }}="">Highway Logistics Link</span>
+<p '#d4e4fa'="" '14.5px',="" '4px="" '750',="" 0',="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">{nearest_highway_ref || "NH Corridor"}</p>
+<p '#5de6ff',="" '12px',="" '700',="" 0="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">Corridor Logistics Bonus: +{(highway_corridor_bonus * 100).toFixed(0)}%</p>
+</div>
+<div '12px',="" '16px',="" '1px="" 'rgba(221,="" 0.05)',="" 0.2)'="" 183,="" 255,="" background:="" border:="" borderradius:="" padding:="" rgba(221,="" solid="" style="{{" }}="">
+<span '#ddb7ff',="" '11px',="" '700',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" style="{{" texttransform:="" }}="">Water Network Access</span>
+<p '#d4e4fa'="" '14.5px',="" '4px="" '750',="" 0',="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">{nearest_river_name || "Regional River Basin"}</p>
+<p '#f0dbff',="" '12px',="" '700',="" 0="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">Water Reliability Index: {(river_reliability_bonus * 100).toFixed(0)}%</p>
+</div>
+</div>
+</div>
+
+            {/* Criteria Breakdown */}
+            {sortedCriteria.length &gt; 0 &amp;&amp; (
+              <div '24px'="" marginbottom:="" style="{{" }}="">
+<h3 '#d4e4fa'="" '-0.01em',="" '14px',="" '15px',="" '850',="" color:="" fontsize:="" fontweight:="" letterspacing:="" marginbottom:="" style="{{" }}="">
+                  ⚖️ Multi-Criteria Evaluation Matrix (MCDA Breakdown)
+                </h3>
+<div '12px',="" '1px="" 'hidden',="" 'rgba(255,255,255,0.02)'="" background:="" border:="" borderradius:="" overflow:="" rgba(255,255,255,0.1)',="" solid="" style="{{" }}="">
+                  
+                      {sortedCriteria.map(([crit, v], idx) =&gt; (
+                         e.currentTarget.style.background = 'rgba(255,255,255,0.03)'} onMouseLeave={e =&gt; e.currentTarget.style.background = 'transparent'}&gt;
+                          
+                      ))}
+                    <table '100%',="" '13px'="" 'collapse',="" bordercollapse:="" fontsize:="" style="{{" width:="" }}="">
+<thead>
+<tr '1px="" 'left'="" 'rgba(0,0,0,0.2)',="" background:="" borderbottom:="" rgba(255,255,255,0.1)',="" solid="" style="{{" textalign:="" }}="">
+<th '#909096'="" '12px="" '750',="" 16px',="" color:="" fontweight:="" padding:="" style="{{" }}="">Evaluation Metric</th>
+<th '#909096',="" '12px="" '750',="" 'right'="" 16px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">Calculated Score</th>
+<th '#909096',="" '12px="" '750',="" 'right'="" 16px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">Impact Weight</th>
+</tr>
+</thead>
+<tbody><tr '1px="" 'background="" 'none',="" -="" 0.2s'="" 1="" :="" <="" =="" ?="" borderbottom:="" idx="" key="{crit}" onmouseenter="{e" rgba(255,255,255,0.05)'="" solid="" sortedcriteria.length="" style="{{" transition:="" }}=""><td '#d4e4fa',="" '12px="" '600',="" 'capitalize'="" 16px',="" color:="" fontweight:="" padding:="" style="{{" texttransform:="" }}="">
+                            {crit.replace(/_/g, ' ')}
+                          </td>
+<td '#2fd9f4'="" '12px="" '750',="" 'right',="" 16px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">
+                            {(v?.score_100 || 0).toFixed(0)} <span '#909096',="" '11px'}}="" fontsize:="" style="{{color:">/ 100</span>
+</td>
+<td '#c7c6cc'="" '12px="" 'right',="" 16px',="" color:="" padding:="" style="{{" textalign:="" }}="">
+<div '11px'="" '12px',="" '2px="" 'inline-block',="" 'rgba(255,255,255,0.1)',="" 8px',="" background:="" borderradius:="" display:="" fontsize:="" padding:="" style="{{" }}="">
+                              {((v?.weight || 0) * 100).toFixed(0)}%
+                            </div>
+</td>
+</tr></tbody>
+</table>
+</div>
+</div>
+            )}
+
+            {/* Footer */}
+            <div '#909096'="" '11px',="" '16px',="" '1px="" '32px',="" 'flex',="" 'space-between',="" bordertop:="" color:="" dashed="" display:="" fontsize:="" justifycontent:="" margintop:="" paddingtop:="" rgba(255,255,255,0.1)',="" style="{{" }}="">
+<span>GeoNexus AI Geospatial Platform</span>
+<span>Confidential Siting Audit Summary</span>
+</div>
+
+            {/* Navigation &amp; Bottom Action bar */}
+            <div '0="" '16px',="" '18px="" '1px="" '28px',="" 'center',="" 'flex',="" 'rgba(47,="" 'space-between',="" 'wrap',="" 0.05)'="" 0.05)',="" 0.2)',="" 20px="" 20px',="" 217,="" 244,="" 4px="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" display:="" flexwrap:="" gap:="" justifycontent:="" margintop:="" padding:="" rgba(47,="" solid="" style="{{" }}="">
+<div>
+<div '#2fd9f4',="" '0.08em'="" '11.5px',="" '800',="" 'uppercase',="" color:="" fontsize:="" fontweight:="" letterspacing:="" style="{{" texttransform:="" }}="">
+                  📍 Compare &amp; Switch Views
+                </div>
+<div '#c7c6cc',="" '13px',="" '4px'="" '600',="" color:="" fontsize:="" fontweight:="" margintop:="" style="{{" }}="">
+                  View the selected site report or perform a side-by-side comparison.
+                </div>
+</div>
+<div '12px',="" 'flex',="" 'wrap'="" display:="" flexwrap:="" gap:="" style="{{" }}="">
+<button =="" onclick="{()"> navigate('/report')}
+                  style={{ padding: '8px 16px', fontSize: '12.5px', color: '#ffb4ab', background: 'transparent', border: '1px solid rgba(255, 180, 171, 0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                &gt;
+                  View Selected
+                </button>
+                {selectedReport &amp;&amp; (
+                  <button =="" onclick="{()"> setShowCompareModal(true)}
+                    style={{ padding: '8px 16px', fontSize: '12.5px', color: '#ddb7ff', background: 'transparent', border: '1px solid rgba(221, 183, 255, 0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                  &gt;
+                    Compare Both
+                  </button>
+                )}
+                <button =="" onclick="{()"> navigate('/analysis/suggestion-map')}
+                  style={{ padding: '8px 20px', fontSize: '12.5px', background: '#2fd9f4', color: '#051424', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(47,217,244,0.3)' }}
+                &gt;
+                  View Map
+                </button>
+</div>
+</div>
+</div>
+</main>
+
+        {showCompareModal &amp;&amp; selectedReport &amp;&amp; suggestion &amp;&amp; (
+          <locationcomparemodal =="" isopen="{showCompareModal}" onclose="{()"> setShowCompareModal(false)}
+            selectedData={selectedReport}
+            suggestionData={suggestion}
+            onViewMap={() =&gt; navigate('/analysis/suggestion-map')}
+          /&gt;
+        )}
+
+        {/* ── HIDDEN PRINTING TEMPLATE ── */}
+        <div '-9999px'="" '-9999px',="" 'absolute',="" left:="" position:="" style="{{" top:="" }}="">
+<div '#1e293b',="" '#ffffff',="" '32px="" '700px',="" 'arial,="" 36px',="" background:="" color:="" fontfamily:="" id="simple-clean-suggestion-pdf-template" padding:="" sans-serif'="" style="{{" width:="" }}="">
+<div #e2e8f0',="" '12px',="" '20px',="" '2px="" 'flex',="" 'space-between'="" borderbottom:="" display:="" justifycontent:="" marginbottom:="" paddingbottom:="" solid="" style="{{" }}="">
+<div>
+<h2 '#0f172a',="" '20px',="" 'bold'="" 0,="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">GeoNexus AI Report</h2>
+<p '#64748b'="" '11px',="" '2px="" 0="" 0',="" color:="" fontsize:="" margin:="" style="{{" }}="">Land Suitability Optimization Audit</p>
+</div>
+<div '#64748b'="" '11px',="" 'right',="" color:="" fontsize:="" style="{{" textalign:="" }}="">
+<div>Date: {reportDate}</div>
+</div>
+</div>
+<div #bbf7d0',="" '#f0fdf4',="" '16px',="" '1px="" '20px',="" '6px',="" 'center'="" 'flex',="" 'space-between',="" alignitems:="" background:="" border:="" borderradius:="" display:="" justifycontent:="" marginbottom:="" padding:="" solid="" style="{{" }}="">
+<div>
+<div '#166534',="" '10px',="" 'bold',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" style="{{" texttransform:="" }}="">Optimized Suggested Location</div>
+<div '#0f172a',="" '18px',="" '2px="" 'bold',="" 0'="" color:="" fontsize:="" fontweight:="" margin:="" style="{{" }}="">{district}</div>
+<div '#475569'="" '12px',="" color:="" fontsize:="" style="{{" }}="">
+                  Sector: {industry_type} {latitude != null &amp;&amp; `(${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E)`}
+                </div>
+</div>
+<div 'right'="" style="{{" textalign:="" }}="">
+<div '#166534',="" '10px',="" 'bold',="" 'uppercase'="" color:="" fontsize:="" fontweight:="" style="{{" texttransform:="" }}="">Optimized score</div>
+<div '#0f172a'="" '24px',="" 'bold',="" color:="" fontsize:="" fontweight:="" style="{{" }}="">{scoreNum.toFixed(1)} / 100</div>
+</div>
+</div>
+<div '20px'="" marginbottom:="" style="{{" }}="">
+<h4 '#0f172a',="" '0="" '12px',="" 'uppercase'="" 0="" 0',="" 8px="" color:="" fontsize:="" margin:="" style="{{" texttransform:="" }}="">Key Infrastructure Corridors</h4>
+<table '100%',="" '11px',="" 'collapse'="" bordercollapse:="" fontsize:="" style="{{" width:="" }}="">
+<tbody>
+<tr>
+<td #e2e8f0',="" '#f8fafc',="" '1px="" '50%'="" '8px',="" background:="" border:="" padding:="" solid="" style="{{" width:="" }}="">
+<strong>Highway Link:</strong> {nearest_highway_ref || "NH Corridor"} (+{(highway_corridor_bonus * 100).toFixed(0)}%)
+                    </td>
+<td #e2e8f0',="" '#f8fafc',="" '1px="" '50%'="" '8px',="" background:="" border:="" padding:="" solid="" style="{{" width:="" }}="">
+<strong>Water Access:</strong> {nearest_river_name || "Regional River Basin"} ({(river_reliability_bonus * 100).toFixed(0)}%)
+                    </td>
+</tr>
+</tbody>
+</table>
+</div>
+
+            {sortedCriteria.length &gt; 0 &amp;&amp; (
+              <div '20px'="" marginbottom:="" style="{{" }}="">
+<h4 '#0f172a',="" '0="" '12px',="" 'uppercase'="" 0="" 0',="" 8px="" color:="" fontsize:="" margin:="" style="{{" texttransform:="" }}="">Evaluation Metrics Breakdown</h4>
+                
+                    {sortedCriteria.map(([crit, v], idx) =&gt; (
+                      
+                    ))}
+                  <table '100%',="" '11px'="" 'collapse',="" bordercollapse:="" fontsize:="" style="{{" width:="" }}="">
+<thead>
+<tr #cbd5e1',="" '#f1f5f9',="" '1.5px="" 'left'="" background:="" borderbottom:="" solid="" style="{{" textalign:="" }}="">
+<th '6px="" 10px'="" padding:="" style="{{" }}="">Metric Description</th>
+<th '6px="" 'right'="" 10px',="" padding:="" style="{{" textalign:="" }}="">Calculated Score</th>
+<th '6px="" 'right'="" 10px',="" padding:="" style="{{" textalign:="" }}="">Impact Weight</th>
+</tr>
+</thead>
+<tbody><tr #e2e8f0',="" %="" '#f8fafc'="" '#ffffff'="" '1px="" 0="" 2="==" :="" ?="" background:="" borderbottom:="" idx="" key="{crit}" solid="" style="{{" }}="">
+<td '6px="" 'capitalize'="" 10px',="" padding:="" style="{{" texttransform:="" }}="">{crit.replace(/_/g, ' ')}</td>
+<td '6px="" 'bold'="" 'right',="" 10px',="" fontweight:="" padding:="" style="{{" textalign:="" }}="">{(v?.score_100 || 0).toFixed(0)} / 100</td>
+<td '#64748b'="" '6px="" 'right',="" 10px',="" color:="" padding:="" style="{{" textalign:="" }}="">{((v?.weight || 0) * 100).toFixed(0)}%</td>
+</tr></tbody>
+</table>
+</div>
+            )}
+
+            <div #e2e8f0',="" '#94a3b8',="" '10px',="" '1px="" '8px',="" 'flex',="" 'space-between'="" bordertop:="" color:="" display:="" fontsize:="" justifycontent:="" paddingtop:="" solid="" style="{{" }}="">
+<span>GeoNexus AI Geospatial Siting Suite</span>
+<span>Official Siting Audit Summary</span>
+</div>
+</div>
+</div>
+</locationcomparemodal></div>
+</layout>
+  );
+}</body></html>

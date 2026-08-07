@@ -1,0 +1,344 @@
+<html><head></head><body>import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import MapComponent from '../components/Map/MapComponent';
+import { predictSite, getIndustryTypes, INDUSTRY_OPTIONS } from '../api/analysis';
+import { isInsideGujarat } from '../utils/locationValidation';
+import html2pdf from 'html2pdf.js';
+import Layout from '../components/Common/Layout';
+
+function fmt(val) {
+  return (val || '').replace(/_/g, ' ').replace(/\b\w/g, c =&gt; c.toUpperCase());
+}
+
+/* ── Step Progress Bar ── */
+function StepBar({ steps, current }) {
+  return (
+    <div '32px',="" '8px',="" 'center',="" 'flex',="" 'wrap'="" alignitems:="" display:="" flexwrap:="" gap:="" marginbottom:="" style="{{" }}="">
+      {steps.map((step, i) =&gt; (
+        <div '1'="" '8px',="" 'center',="" 'flex',="" 'unset'="" -="" 1="" :="" <="" ?="" alignitems:="" display:="" flex:="" gap:="" i="" key="{i}" steps.length="" style="{{" }}="">
+<div '"inter",="" '#5de6ff'="" '#909096',="" '#ddb7ff'="" '13px',="" '600',="" '800'="" '8px',="" 'center',="" 'flex',="" 'nowrap',="" :="" <="" ?="" alignitems:="" color:="" current="" display:="" fontfamily:="" fontsize:="" fontweight:="" gap:="" i="" sans-serif',="" style="{{" whitespace:="" }}="">
+<div ${i="" '#00363e'="" '#5de6ff'="" '#909096',="" '#ddb7ff'="" '0="" '11px',="" '26px',="" '50%',="" '900',="" 'center',="" 'flex',="" 'none',="" 'rgba(221,183,255,0.2)'="" 'rgba(255,255,255,0.05)',="" 'rgba(255,255,255,0.1)'}`,="" 0="" 0,="" 10px="" :="" <="" ?="" `2px="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" color:="" current="" display:="" flexshrink:="" fontsize:="" fontweight:="" height:="" i="" justifycontent:="" rgba(221,183,255,0.5)'="" rgba(93,230,255,0.5)'="" solid="" style="{{" width:="" }}="">
+              {i &lt; current ? '✓' : i + 1}
+            </div>
+            {step}
+          </div>
+          {i &lt; steps.length - 1 &amp;&amp; (
+            <div '#5de6ff'="" '16px'="" '1px',="" 'rgba(255,255,255,0.08)',="" 1,="" :="" <="" ?="" background:="" current="" flex:="" height:="" i="" minwidth:="" style="{{" }}="">
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Score Badge ── */
+function ScoreBadge({ score, color }) {
+  const label = score &gt;= 75 ? 'Excellent' : score &gt;= 55 ? 'Good' : score &gt;= 35 ? 'Moderate' : 'Poor';
+  const c = color || (score &gt;= 75 ? '#5de6ff' : score &gt;= 55 ? '#2fd9f4' : score &gt;= 35 ? '#ddb7ff' : '#ffb4ab');
+  return (
+    <div ${c}20`,="" ${c}40`,="" '24px',="" '8px="" '8px',="" 'center',="" 'inline-flex',="" 0="" 12px="" 16px',="" `${c}18`,="" `0="" `1px="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" c,="" color:="" display:="" gap:="" padding:="" solid="" style="{{" }}="">
+<span '26px',="" '900',="" 1="" fontsize:="" fontweight:="" lineheight:="" style="{{" }}="">{Number(score).toFixed(1)}</span>
+<div>
+<div '10px',="" '700',="" 0.7="" fontsize:="" fontweight:="" opacity:="" style="{{" }}="">/100</div>
+<div '11px',="" '800'="" fontsize:="" fontweight:="" style="{{" }}="">{label}</div>
+</div>
+</div>
+  );
+}
+
+/* ── Industry Card ── */
+function IndustryCard({ ind, selected, disabled, onClick, color }) {
+  return (
+    <button ${color}30`="" ${selected="" '"inter",="" '#d4e4fa',="" '10px',="" '12px="" '12px',="" '700',="" '8px',="" 'all="" 'center',="" 'flex',="" 'left',="" 'none',="" 'not-allowed'="" 'pointer',="" 'rgba(255,255,255,0.02)'="" 'rgba(255,255,255,0.03)',="" 'rgba(255,255,255,0.05)'="" 'rgba(255,255,255,0.08)'}`,="" 'rgba(255,255,255,0.2)'="" 0="" 0.18s',="" 0.45="" 1,="" 14px',="" 15px="" :="" ?="" `${color}18`="" `0="" `1.5px="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" color="" color:="" cursor:="" disabled="{disabled}" display:="" fontfamily:="" fontsize:="" fontweight:="" gap:="" onclick="{onClick}" opacity:="" padding:="" sans-serif',="" selected="" solid="" style="{{" textalign:="" transition:="" }}="">
+<div ${selected="" '#051424'="" '#fff',="" '14px',="" '24px',="" '6px',="" 'center',="" 'flex',="" 'rgba(255,255,255,0.06)',="" 'rgba(255,255,255,0.1)'}`,="" 0,="" :="" ?="" `1.5px="" alignitems:="" background:="" border:="" borderradius:="" color="" color:="" display:="" flexshrink:="" fontsize:="" height:="" justifycontent:="" selected="" solid="" style="{{" width:="" }}="">
+        {selected ? <span '16px'}}="" classname="material-symbols-outlined" style="{{fontSize:">check</span> : <span '16px'}}="" classname="material-symbols-outlined" style="{{fontSize:">factory</span>}
+      </div>
+<span 1.3="" lineheight:="" style="{{" }}="">{fmt(ind)}</span>
+</button>
+  );
+}
+
+export default function CompareTwoIndustries() {
+  const navigate = useNavigate();
+  const pdfRef = useRef(null);
+
+  const STEPS = ['Select Location', 'Select Industries', 'View Results'];
+
+  const [step, setStep] = useState(0);
+  const [allIndustries, setAllIndustries] = useState([]);
+  const [industryA, setIndustryA] = useState('');
+  const [industryB, setIndustryB] = useState('');
+  const [loc, setLoc] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [resultA, setResultA] = useState(null);
+  const [resultB, setResultB] = useState(null);
+
+  useEffect(() =&gt; {
+    getIndustryTypes()
+      .then(types =&gt; {
+        const opts = types.length ? types : INDUSTRY_OPTIONS.map(o =&gt; o.value);
+        setAllIndustries(opts);
+        setIndustryA(opts[0] || '');
+        setIndustryB(opts[1] || opts[0] || '');
+      })
+      .catch(() =&gt; {
+        const opts = INDUSTRY_OPTIONS.map(o =&gt; o.value);
+        setAllIndustries(opts);
+        setIndustryA(opts[0] || '');
+        setIndustryB(opts[1] || opts[0] || '');
+      });
+  }, []);
+
+  const handleLocSelect = ({ lat, lon }) =&gt; {
+    if (!isInsideGujarat(lat, lon)) {
+      setError('Location coordinates are outside Gujarat state borders.');
+      return;
+    }
+    setError('');
+    setLoc({ lat, lon });
+  };
+
+  const canRunComparison = industryA &amp;&amp; industryB &amp;&amp; industryA !== industryB;
+
+  const runComparison = async () =&gt; {
+    if (!canRunComparison) { setError('Please select two different industry sectors.'); return; }
+    setError('');
+    setLoading(true);
+    try {
+      const [rA, rB] = await Promise.all([
+        predictSite({ latitude: loc.lat, longitude: loc.lon, industryType: industryA }),
+        predictSite({ latitude: loc.lat, longitude: loc.lon, industryType: industryB }),
+      ]);
+      setResultA(rA);
+      setResultB(rB);
+      setStep(2);
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || 'Prediction analysis failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportPDF = () =&gt; {
+    if (!pdfRef.current) return;
+    html2pdf().set({
+      margin: 10, filename: 'compare-industries.pdf',
+      html2canvas: { scale: 2 }, jsPDF: { orientation: 'portrait', format: 'a4' },
+    }).from(pdfRef.current).save();
+  };
+
+  const scoreA = resultA?.mcda_final_suitability_score ?? 0;
+  const scoreB = resultB?.mcda_final_suitability_score ?? 0;
+  const winner = scoreA &gt; scoreB ? 'A' : scoreB &gt; scoreA ? 'B' : 'Tie';
+  const criteriaKeys = resultA &amp;&amp; resultB ? Object.keys(resultA.criteria_breakdown || {}) : [];
+
+  return (
+    <layout>
+<style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
+      `}</style>
+      {/* Subheader */}
+      <div #273647',="" '#0d1c2d',="" '12px="" '1px="" 40px)'="" 4vw,="" background:="" borderbottom:="" clamp(16px,="" padding:="" solid="" style="{{" }}="">
+<div '0="" '100%'="" '1000px',="" '12px',="" 'center',="" 'flex',="" 'space-between',="" 'wrap',="" alignitems:="" auto',="" display:="" flexwrap:="" gap:="" justifycontent:="" margin:="" maxwidth:="" style="{{" width:="" }}="">
+<button =="" onclick="{()"> navigate('/compare')}
+            className="btn-ghost"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '12.5px', color: '#c3c6d7' }}
+          &gt;
+            ← Compare Hub
+          </button>
+<span '"inter",="" '-0.02em'="" '17px',="" '850',="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" sans-serif',="" style="{{" }}="">
+<span '#ddb7ff'="" color:="" style="{{" }}="">Industry</span>
+<span '#d4e4fa'="" color:="" style="{{" }}=""> Compare</span>
+</span>
+          {step &gt;= 1 &amp;&amp; loc &amp;&amp; (
+            <div '#ddb7ff',="" '0="" '12px',="" '1px="" '20px',="" '5px="" '6px',="" '750',="" 'center',="" 'flex',="" 'rgba(221,183,255,0.1)',="" 'tabular-nums',="" 0="" 12px',="" 8px="" alignitems:="" background:="" border:="" borderradius:="" boxshadow:="" color:="" display:="" fontsize:="" fontvariantnumeric:="" fontweight:="" gap:="" padding:="" rgba(221,183,255,0.2)'="" rgba(221,183,255,0.3)',="" solid="" style="{{" }}="">
+<span '14px'}}="" classname="material-symbols-outlined" style="{{fontSize:">location_on</span> {loc.lat.toFixed(4)}°N, {loc.lon.toFixed(4)}°E
+            </div>
+          )}
+        </div>
+</div>
+<main '#051424',="" '0="" '100%',="" '1000px',="" '100vh'="" 'clamp(24px,4vw,48px)="" auto',="" background:="" clamp(16px,4vw,24px)',="" classname="anim-fadeIn" margin:="" maxwidth:="" minheight:="" padding:="" style="{{" width:="" }}="">
+<stepbar current="{step}" steps="{STEPS}">
+
+        {error &amp;&amp; (
+          <div '#ffb4ab',="" '0="" '12px',="" '13.5px',="" '14px="" '1px="" '24px',="" '700',="" 'center',="" 'rgba(255,180,171,0.1)',="" 0="" 10px="" 18px',="" background:="" border:="" borderradius:="" boxshadow:="" color:="" fontsize:="" fontweight:="" marginbottom:="" padding:="" rgba(255,180,171,0.2)'="" rgba(255,180,171,0.3)',="" solid="" style="{{" textalign:="" }}="">
+<span '16px',="" 'text-bottom'}}="" classname="material-symbols-outlined" style="{{fontSize:" verticalalign:="">warning</span> {error}
+          </div>
+        )}
+
+        {/* STEP 0: Select Location */}
+        {step === 0 &amp;&amp; (
+          <div #273647',="" '#122131'="" '1px="" '20px',="" 'hidden',="" background:="" border:="" borderradius:="" classname="glass-bright" overflow:="" solid="" style="{{" }}="">
+<div #273647'="" '1px="" '24px="" 20px',="" 32px)="" 4vw,="" borderbottom:="" clamp(16px,="" padding:="" solid="" style="{{" }}="">
+<h2 '"inter",="" '#d4e4fa'="" '-0.02em',="" '0="" '22px',="" '900',="" 0="" 6px',="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" sans-serif',="" style="{{" }}="">Select Location Site</h2>
+<p '#c7c6cc',="" '13.5px',="" 0="" color:="" fontsize:="" margin:="" style="{{" }}="">Click anywhere on the map inside Gujarat state borders to specify the target siting coordinate.</p>
+              {loc &amp;&amp; <div '#ddb7ff',="" '10px',="" '13px',="" '700',="" 'tabular-nums'="" color:="" fontsize:="" fontvariantnumeric:="" fontweight:="" margintop:="" style="{{" }}=""><span '14px',="" 'text-bottom'}}="" classname="material-symbols-outlined" style="{{fontSize:" verticalalign:="">check_circle</span> Siting coordinates: {loc.lat.toFixed(5)}°N, {loc.lon.toFixed(5)}°E</div>}
+            </div>
+<div '420px',="" 'relative'="" height:="" position:="" style="{{" }}="">
+<mapcomponent '#ddb7ff',="" 'selected="" :="" ?="" []}="" [{="" color:="" label:="" lat:="" loc.lat,="" loc.lon,="" lon:="" markers="{loc" onlocationselect="{handleLocSelect}" site'="" }]="">
+</mapcomponent></div>
+<div '#122131'="" '12px',="" '20px="" 'flex',="" 32px)',="" 4vw,="" background:="" clamp(16px,="" display:="" gap:="" padding:="" style="{{" }}="">
+<button =="" disabled="{!loc}" onclick="{()"> setStep(1)}
+                className="btn-primary"
+                style={{ padding: '12px 28px', background: '#ddb7ff', color: '#1a0033', border: 'none', borderRadius: '8px', fontWeight: '600', boxShadow: loc ? '0 0 15px rgba(221,183,255,0.4)' : 'none', cursor: loc ? 'pointer' : 'not-allowed', opacity: loc ? 1 : 0.5 }}
+              &gt;
+                {loc ? 'Continue to Sectors →' : 'Set Siting Location'}
+              </button>
+</div>
+</div>
+        )}
+
+        {/* STEP 1: Select Industries */}
+        {step === 1 &amp;&amp; (
+          <div #273647',="" '#122131'="" '1px="" '20px',="" '36px="" 36px)',="" 4vw,="" background:="" border:="" borderradius:="" clamp(16px,="" classname="glass-bright" padding:="" solid="" style="{{" }}="">
+<h2 '"inter",="" '#d4e4fa'="" '-0.02em',="" '0="" '24px',="" '900',="" 0="" 6px',="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" margin:="" sans-serif',="" style="{{" }}="">Select Industry Sectors</h2>
+<p '#c7c6cc',="" '0="" '14px',="" 0="" 32px'="" color:="" fontsize:="" margin:="" style="{{" }}="">Pick two different industrial sectors to compare suitability parameters at this coordinate.</p>
+<div '28px'="" 'grid',="" 'repeat(auto-fit,="" 1fr))',="" display:="" gap:="" gridtemplatecolumns:="" minmax(320px,="" style="{{" }}="">
+              {/* Sector A */}
+              <div>
+<h4 '#5de6ff',="" '0="" '0.08em',="" '12px',="" '14px',="" '800',="" 'uppercase',="" 0="" 8px="" color:="" fontsize:="" fontweight:="" letterspacing:="" marginbottom:="" rgba(93,230,255,0.5)'="" style="{{" textshadow:="" texttransform:="" }}="">Industry Sector A</h4>
+<div '1fr="" '8px',="" 'grid',="" 1fr'="" display:="" gap:="" gridtemplatecolumns:="" style="{{" }}="">
+                  {allIndustries.map(ind =&gt; (
+                    <industrycard =="=" color="#5de6ff" disabled="{industryB" ind="{ind}" ind}="" key="{ind}" onclick="{()" selected="{industryA"> setIndustryA(ind)}
+                    /&gt;
+                  ))}
+                </industrycard></div>
+</div>
+
+              {/* Sector B */}
+              <div>
+<h4 '#ddb7ff',="" '0="" '0.08em',="" '12px',="" '14px',="" '800',="" 'uppercase',="" 0="" 8px="" color:="" fontsize:="" fontweight:="" letterspacing:="" marginbottom:="" rgba(221,183,255,0.5)'="" style="{{" textshadow:="" texttransform:="" }}="">Industry Sector B</h4>
+<div '1fr="" '8px',="" 'grid',="" 1fr'="" display:="" gap:="" gridtemplatecolumns:="" style="{{" }}="">
+                  {allIndustries.map(ind =&gt; (
+                    <industrycard =="=" color="#ddb7ff" disabled="{industryA" ind="{ind}" ind}="" key="{ind}" onclick="{()" selected="{industryB"> setIndustryB(ind)}
+                    /&gt;
+                  ))}
+                </industrycard></div>
+</div>
+</div>
+<div '12px',="" '36px',="" 'flex',="" 'wrap'="" display:="" flexwrap:="" gap:="" margintop:="" style="{{" }}="">
+<button =="" onclick="{()"> setStep(0)} className="btn-ghost" style={{ padding: '12px 24px', color: '#c3c6d7', border: '1px solid #46464c', borderRadius: '8px' }}&gt;
+                ← Back
+              </button>
+<button '#00363e',="" '#5de6ff',="" '0="" '12px="" '600',="" '8px',="" 'none',="" 'not-allowed',="" 'pointer'="" 0="" 0.5="" 1="" 15px="" 28px',="" :="" ?="" background:="" border:="" borderradius:="" boxshadow:="" canruncomparison="" classname="btn-primary" color:="" cursor:="" disabled="{!canRunComparison" fontweight:="" loading}="" onclick="{runComparison}" opacity:="" padding:="" rgba(93,230,255,0.4)'="" style="{{" ||="" }}="">
+<span '18px',="" 'text-bottom'}}="" classname="material-symbols-outlined" style="{{fontSize:" verticalalign:="">rocket_launch</span> Run Industry Comparison
+              </button>
+</div>
+</div>
+        )}
+
+        {/* Loading Spinner */}
+        {loading &amp;&amp; (
+          <div #273647',="" '#122131',="" '#d4e4fa'="" '1px="" '20px',="" '40px',="" 'center',="" background:="" border:="" borderradius:="" classname="glass-bright" color:="" padding:="" solid="" style="{{" textalign:="" }}="">
+<span '32px',="" 'spin="" 1s="" animation:="" classname="material-symbols-outlined" infinite'}}="" linear="" style="{{fontSize:">sync</span>
+<div '16px'}}="" style="{{marginTop:">Analyzing spatial data...</div>
+</div>
+        )}
+
+        {/* STEP 2: Results */}
+        {step === 2 &amp;&amp; resultA &amp;&amp; resultB &amp;&amp; !loading &amp;&amp; (
+          <div classname="anim-fadeIn" ref="{pdfRef}">
+            {/* Winner panel */}
+            <div ${winner="==" '16px',="" '24px',="" '28px',="" 'a'="" 'center',="" 'rgba(195,198,215,0.1)'="" 'rgba(195,198,215,0.2)'="" 'rgba(195,198,215,0.3)'="" 'rgba(221,183,255,0.1)',="" 'rgba(221,183,255,0.2)'}`="" 'rgba(221,183,255,0.3)'}`,="" 'rgba(93,230,255,0.1)'="" 'rgba(93,230,255,0.2)'="" 'rgba(93,230,255,0.3)'="" 'tie'="" 0="" 20px="" :="" ?="" `0="" `1.5px="" background:="" border:="" borderradius:="" boxshadow:="" marginbottom:="" padding:="" solid="" style="{{" textalign:="" winner="==" }}="">
+<div '32px',="" '8px'="" fontsize:="" marginbottom:="" style="{{" }}="">
+<span '#5de6ff'="" '#c3c6d7'="" '#ddb7ff'}}="" '40px',="" 'a'="" 'tie'="" :="" ?="" classname="material-symbols-outlined" color:="" style="{{fontSize:" winner="==">{winner === 'Tie' ? 'handshake' : 'emoji_events'}</span>
+</div>
+<div ${winner="==" '"inter",="" '#5de6ff'="" '#c3c6d7'="" '#ddb7ff',="" '-0.01em',="" '22px',="" '950',="" 'a'="" 'rgba(195,198,215,0.5)'="" 'rgba(221,183,255,0.5)'}`="" 'rgba(93,230,255,0.5)'="" 'tie'="" 0="" 10px="" :="" ?="" `0="" color:="" fontfamily:="" fontsize:="" fontweight:="" letterspacing:="" sans-serif',="" style="{{" textshadow:="" winner="==" }}="">
+                {winner === 'Tie' ? "Both sectors score equally!" : `${fmt(winner === 'A' ? industryA : industryB)} Siting Selected!`}
+              </div>
+<div '#c7c6cc',="" '13px',="" '4px',="" '600'="" color:="" fontsize:="" fontweight:="" margintop:="" style="{{" }}="">
+                {winner !== 'Tie' ? `Δ Score Delta: ${Math.abs(scoreA - scoreB).toFixed(1)} suitability points` : 'Both sectors have matching suitability index'}
+              </div>
+</div>
+
+            {/* Overview banner */}
+            <div #273647',="" '#1c2b3c',="" '#c7c6cc'="" '12px',="" '13px',="" '14px="" '1px="" '24px',="" 18px',="" background:="" border:="" borderradius:="" color:="" fontsize:="" marginbottom:="" padding:="" solid="" style="{{" }}="">
+              Siting Region: <strong '#d4e4fa'="" color:="" style="{{" }}="">{resultA.district || 'Gujarat'}</strong>
+               ·  Sector A: <strong '#5de6ff'="" color:="" style="{{" }}="">{fmt(industryA)}</strong>
+               ·  Sector B: <strong '#ddb7ff'="" color:="" style="{{" }}="">{fmt(industryB)}</strong>
+</div>
+
+            {/* Score cards */}
+            <div '20px',="" '32px'="" 'grid',="" 'repeat(auto-fit,="" 1fr))',="" display:="" gap:="" gridtemplatecolumns:="" marginbottom:="" minmax(280px,="" style="{{" }}="">
+              {[
+                { label: fmt(industryA), result: resultA, color: '#5de6ff', score: scoreA, isWinner: winner === 'A' },
+                { label: fmt(industryB), result: resultB, color: '#ddb7ff', score: scoreB, isWinner: winner === 'B' },
+              ].map(({ label, result, color, score, isWinner }) =&gt; (
+                <div ${color}10`="" ${color}20,="" ${iswinner="" '#122131',="" '#273647'}`,="" '20px',="" '24px',="" '60'="" 'none',="" +="" 0="" 15px="" 20px="" :="" ?="" `0="" `1.5px="" background:="" border:="" borderradius:="" boxshadow:="" color="" inset="" iswinner="" key="{label}" padding:="" solid="" style="{{" }}="">
+<div '16px'="" 'center',="" 'flex',="" 'space-between',="" alignitems:="" display:="" justifycontent:="" marginbottom:="" style="{{" }}="">
+<span '"inter",="" '#d4e4fa'="" '17px',="" '850',="" color:="" fontfamily:="" fontsize:="" fontweight:="" sans-serif',="" style="{{" }}="">{label}</span>
+                    {isWinner &amp;&amp; <span ${color}40`,="" '11px',="" '20px',="" '2px="" '750'="" 8px',="" `${color}20`,="" `1px="" background:="" border:="" borderradius:="" color,="" fontsize:="" fontweight:="" padding:="" solid="" style="{{" }}=""><span '12px',="" 'text-bottom'}}="" classname="material-symbols-outlined" style="{{fontSize:" verticalalign:="">star</span> WINNER</span>}
+                  </div>
+<div '14px'="" marginbottom:="" style="{{" }}=""><scorebadge color="{color}" score="{score}"></scorebadge></div>
+<div '#c7c6cc'="" '12.5px',="" color:="" fontsize:="" style="{{" }}="">
+<div '4px'}}="" style="{{marginBottom:"><span '#c3c6d7'}}="" '14px',="" 'text-bottom',="" classname="material-symbols-outlined" color:="" style="{{fontSize:" verticalalign:="">add_road</span> <b>Highway Link:</b> {result.nearest_highway_ref || 'NH'}</div>
+<div '4px'}}="" style="{{marginBottom:"><span '#c3c6d7'}}="" '14px',="" 'text-bottom',="" classname="material-symbols-outlined" color:="" style="{{fontSize:" verticalalign:="">water</span> <b>River Vector:</b> {result.nearest_river_name || 'River'}</div>
+                    {result.lightgbm_predicted_label &amp;&amp; <div><span '#c3c6d7'}}="" '14px',="" 'text-bottom',="" classname="material-symbols-outlined" color:="" style="{{fontSize:" verticalalign:="">memory</span> <b>ML label:</b> {result.lightgbm_predicted_label}</div>}
+                  </div>
+</div>
+              ))}
+            </div>
+
+            {/* Criteria breakdown table */}
+            {criteriaKeys.length &gt; 0 &amp;&amp; (
+              <div #273647',="" '#122131',="" '1px="" '20px',="" '32px'="" 'hidden',="" background:="" border:="" borderradius:="" marginbottom:="" overflow:="" solid="" style="{{" }}="">
+<div #273647',="" '1px="" '20px="" '8px'="" 'center',="" 'flex',="" 24px',="" alignitems:="" borderbottom:="" display:="" gap:="" padding:="" solid="" style="{{" }}="">
+<span '#c3c6d7'}}="" classname="material-symbols-outlined" style="{{color:">analytics</span>
+<h3 '"inter",="" '#d4e4fa'="" '16.5px',="" '850',="" 0,="" color:="" fontfamily:="" fontsize:="" fontweight:="" margin:="" sans-serif',="" style="{{" }}="">Suitability Matrix Breakdown</h3>
+</div>
+<div 'auto'="" overflowx:="" style="{{" }}="">
+                  
+                      {criteriaKeys.map((key, idx) =&gt; {
+                        const cA = resultA.criteria_breakdown[key];
+                        const cB = resultB.criteria_breakdown[key];
+                        const sA = cA?.score_100 ?? 0;
+                        const sB = cB?.score_100 ?? 0;
+                        const delta = sA - sB;
+                        const deltaColor = delta &gt; 0 ? '#5de6ff' : delta &lt; 0 ? '#ddb7ff' : '#909096';
+                        return (
+                          
+                        );
+                      })}
+                    <table '100%',="" '13px'="" 'collapse',="" bordercollapse:="" classname="responsive-table" fontsize:="" style="{{" width:="" }}="">
+<thead>
+<tr '#1c2b3c'="" background:="" style="{{" }}="">
+<th '#c3c6d7',="" '12px="" '750'="" 'left',="" 18px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">Criterion Parameter</th>
+<th '#5de6ff',="" '0="" '12px="" '750',="" 'center',="" 0="" 18px',="" 5px="" color:="" fontweight:="" padding:="" rgba(93,230,255,0.4)'="" style="{{" textalign:="" textshadow:="" }}="">Score A</th>
+<th '#ddb7ff',="" '0="" '12px="" '750',="" 'center',="" 0="" 18px',="" 5px="" color:="" fontweight:="" padding:="" rgba(221,183,255,0.4)'="" style="{{" textalign:="" textshadow:="" }}="">Score B</th>
+<th '#c3c6d7',="" '12px="" '750'="" 'center',="" 18px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">Δ Delta</th>
+</tr>
+</thead>
+<tbody><tr #273647',="" %="" '#1c2b3c'="" '1px="" 'transparent'="" 0="" 2="==" :="" ?="" background:="" borderbottom:="" idx="" key="{key}" solid="" style="{{" }}="">
+<td '#d4e4fa',="" '11px="" '600',="" 'capitalize'="" 18px',="" color:="" fontweight:="" padding:="" style="{{" texttransform:="" }}="">
+                              {key.replace(/_/g, ' ')}
+                            </td>
+<td '#5de6ff',="" '11px="" '750'="" 'center',="" 18px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">{Number(sA).toFixed(1)}</td>
+<td '#ddb7ff',="" '11px="" '750'="" 'center',="" 18px',="" color:="" fontweight:="" padding:="" style="{{" textalign:="" }}="">{Number(sB).toFixed(1)}</td>
+<td '11px="" '800'="" 'center',="" 18px',="" color:="" deltacolor,="" fontweight:="" padding:="" style="{{" textalign:="" }}="">
+                              {delta &gt; 0 ? '+' : ''}{Number(delta).toFixed(1)}
+                            </td>
+</tr></tbody>
+</table>
+</div>
+</div>
+            )}
+
+            {/* Actions */}
+            <div '12px',="" 'flex',="" 'wrap'="" display:="" flexwrap:="" gap:="" style="{{" }}="">
+<button =="" onclick="{()"> navigate('/compare')} className="btn-ghost" style={{ padding: '12px 24px', color: '#c3c6d7', border: '1px solid #46464c', borderRadius: '8px' }}&gt;
+                ← Return to Hub
+              </button>
+<button =="" onclick="{()"> { setStep(0); setLoc(null); setResultA(null); setResultB(null); setError(''); }} className="btn-ghost" style={{ padding: '12px 24px', color: '#5de6ff', border: '1px solid rgba(93,230,255,0.4)', borderRadius: '8px', background: 'rgba(93,230,255,0.05)' }}&gt;
+                <span '16px',="" 'text-bottom'}}="" classname="material-symbols-outlined" style="{{fontSize:" verticalalign:="">restart_alt</span> New Comparison
+              </button>
+<button '#1a0033',="" '#ddb7ff',="" '0="" '12px="" '600',="" '8px',="" 'none',="" 0="" 15px="" 28px',="" background:="" border:="" borderradius:="" boxshadow:="" classname="btn-primary" color:="" fontweight:="" onclick="{handleExportPDF}" padding:="" rgba(221,183,255,0.3)'="" style="{{" }}="">
+<span '18px',="" 'text-bottom'}}="" classname="material-symbols-outlined" style="{{fontSize:" verticalalign:="">download</span> Download PDF Audit
+              </button>
+</div>
+</div>
+        )}
+      </stepbar></main>
+</layout>
+  );
+}</div></body></html>

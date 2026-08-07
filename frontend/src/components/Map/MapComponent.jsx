@@ -20,25 +20,25 @@ function PulsingRadarPin() {
     }}>
       <div style={{
         position: 'absolute', width: '48px', height: '48px', borderRadius: '50%',
-        border: '2px solid rgba(56, 189, 248, 0.5)',
+        border: '2px solid var(--c-primary-300)',
         animation: 'pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite',
       }}/>
       <div style={{
         position: 'absolute', width: '48px', height: '48px', borderRadius: '50%',
-        border: '2px solid rgba(99, 102, 241, 0.4)',
+        border: '2px solid var(--c-primary-400)',
         animation: 'pulse-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) 0.6s infinite',
       }}/>
       <div style={{
-        position: 'absolute', width: '20px', height: '1px', background: 'var(--cyan)',
+        position: 'absolute', width: '20px', height: '1px', background: 'var(--c-primary-500)',
       }} />
       <div style={{
-        position: 'absolute', width: '1px', height: '20px', background: 'var(--cyan)',
+        position: 'absolute', width: '1px', height: '20px', background: 'var(--c-primary-500)',
       }} />
       <div style={{
         width: '12px', height: '12px', borderRadius: '50%',
-        background: 'var(--cyan)',
-        border: '2px solid #ffffff',
-        boxShadow: '0 0 16px var(--cyan)',
+        background: 'var(--c-primary-600)',
+        border: '2px solid var(--text-primary)fff',
+        boxShadow: 'var(--shadow-sm)',
         zIndex: 2,
       }}/>
     </div>
@@ -57,10 +57,10 @@ function TargetCrosshairIcon({ loading }) {
       strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={loading ? { animation: 'spin 0.8s linear infinite', color: 'var(--cyan)' } : { color: 'var(--cyan)' }}
+      style={loading ? { animation: 'spin 0.8s linear infinite', color: 'var(--c-primary-500)' } : { color: 'var(--c-primary-500)' }}
     >
       <circle cx="12" cy="12" r="8" strokeOpacity="0.4" />
-      <circle cx="12" cy="12" r="3" fill="var(--cyan)" />
+      <circle cx="12" cy="12" r="3" fill="var(--c-primary-500)" />
       <line x1="12" y1="2" x2="12" y2="6" />
       <line x1="12" y1="18" x2="12" y2="22" />
       <line x1="2" y1="12" x2="6" y2="12" />
@@ -78,14 +78,14 @@ function InstructionBanner({ visible }) {
       zIndex: 800, pointerEvents: 'none',
       display: 'flex', alignItems: 'center', gap: '8px',
       padding: '8px 18px',
-      background: 'rgba(11, 15, 25, 0.85)', backdropFilter: 'blur(16px)',
-      border: '1px solid rgba(56, 189, 248, 0.25)',
+      background: 'var(--c-surface)',
+      border: '1px solid var(--border-default)',
       borderRadius: 'var(--r-full)',
       color: 'var(--text-primary)', fontSize: '12px', fontWeight: '600',
-      boxShadow: 'var(--shadow-md), 0 0 20px rgba(56, 189, 248, 0.1)',
+      boxShadow: 'var(--shadow-md)',
     }}>
       <span style={{
-        width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cyan)',
+        width: '6px', height: '6px', borderRadius: '50%', background: 'var(--c-primary-500)',
         animation: 'pulse-soft 1.2s infinite',
       }}/>
       <span>Select coordinate points inside Gujarat State</span>
@@ -102,14 +102,13 @@ function WarningBanner({ message, onClose }) {
       zIndex: 990,
       display: 'flex', alignItems: 'center', gap: '10px',
       padding: '10px 20px',
-      background: 'rgba(244, 63, 94, 0.95)',
-      backdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
+      background: 'var(--c-error)',
+      border: '1px solid var(--c-error-light)',
       borderRadius: 'var(--r-md)',
-      color: '#FFFFFF', fontSize: '13px', fontWeight: '700',
-      boxShadow: '0 12px 36px rgba(244, 63, 94, 0.45)',
+      color: 'var(--text-primary)', fontSize: '13px', fontWeight: '700',
+      boxShadow: 'var(--shadow-md)',
     }}>
-      <span style={{ fontSize: '16px' }}>⚠️</span>
+      <span style={{ fontSize: '16px' }}>️</span>
       <span>{message}</span>
       <button
         onClick={onClose}
@@ -118,7 +117,7 @@ function WarningBanner({ message, onClose }) {
           cursor: 'pointer', marginLeft: '8px', fontSize: '14px', fontWeight: '900'
         }}
       >
-        ✕
+        
       </button>
     </div>
   );
@@ -128,23 +127,23 @@ function WarningBanner({ message, onClose }) {
 function ConfirmModal({ onConfirm, onCancel }) {
   return (
     <div className="anim-fadeIn" style={{
-      position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.75)', backdropFilter: 'blur(12px)',
+      position: 'fixed', inset: 0, background: 'var(--border-default)',
       display: 'flex', justifyContent: 'center', alignItems: 'center',
       zIndex: 99999, padding: '20px',
     }}>
-      <div className="glass-bright anim-scaleIn" style={{
+      <div className="anim-scaleIn" style={{
         width: '100%', maxWidth: '390px', borderRadius: 'var(--r-xl)', overflow: 'hidden',
-        boxShadow: 'var(--shadow-xl)',
+        boxShadow: 'var(--shadow-xl)', background: 'var(--c-surface)'
       }}>
-        <div style={{ height: '3px', background: 'linear-gradient(90deg, var(--red), var(--orange))' }}/>
+        <div style={{ height: '3px', background: 'var(--c-warning)' }}/>
         <div style={{ padding: '32px', textAlign: 'center' }}>
           <div style={{
             width: '56px', height: '56px', borderRadius: '50%',
-            background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.3)',
+            background: 'var(--c-warning-light)', border: '1px solid var(--c-warning)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 18px', fontSize: '24px',
           }}>
-            ⚠️
+            ️
           </div>
           <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '8px', fontFamily: 'var(--font-display)' }}>
             Clear Selection Pin?
@@ -160,10 +159,10 @@ function ConfirmModal({ onConfirm, onCancel }) {
               onClick={onConfirm}
               style={{
                 flex: 1, padding: '10px', borderRadius: 'var(--r-sm)',
-                border: 'none', background: 'var(--red)', color: '#fff',
+                border: 'none', background: 'var(--red)', color: 'var(--text-primary)',
                 fontWeight: '700', fontSize: '13px', cursor: 'pointer',
                 transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
-                boxShadow: '0 4px 14px rgba(244, 63, 94, 0.3)',
+                boxShadow: 'var(--shadow-md)',
               }}>
               Clear
             </button>
@@ -180,22 +179,21 @@ function TrackingPanel({ location, onClear }) {
     <div className="anim-fadeUp" style={{
       position: 'absolute', bottom: '24px', left: '16px', zIndex: 800,
       width: 'calc(100% - 32px)', maxWidth: '310px',
-      background: 'rgba(11, 15, 25, 0.90)',
-      backdropFilter: 'blur(24px) saturate(180%)',
-      border: '1px solid rgba(255,255,255,0.1)',
+      background: 'var(--c-surface)',
+      border: '1px solid var(--border-default)',
       borderRadius: 'var(--r-lg)',
-      boxShadow: 'var(--shadow-lg), 0 0 35px rgba(56, 189, 248, 0.08)',
+      boxShadow: 'var(--shadow-lg)',
       overflow: 'hidden',
     }}>
-      <div style={{ height: '2px', background: 'var(--grad-brand)' }} />
+      <div style={{ height: '2px', background: 'var(--c-primary-500)' }} />
       <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
           <div style={{
             width: '24px', height: '24px', borderRadius: '7px',
-            background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.25)',
+            background: 'var(--c-primary-50)', border: '1px solid var(--c-primary-200)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--c-primary-600)" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
           <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.08em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
             Gujarat Site Lock
@@ -209,10 +207,10 @@ function TrackingPanel({ location, onClear }) {
           ].map(row => (
             <div key={row.label} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '6px 10px', background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--r-xs)',
+              padding: '6px 10px', background: 'var(--c-surface-alt)',
+              border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-xs)',
             }}>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '600' }}>{row.label}</span>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-secondary)', fontWeight: '600' }}>{row.label}</span>
               <span style={{ fontSize: '12.5px', color: 'var(--text-primary)', fontWeight: '700', fontVariantNumeric: 'tabular-nums' }}>{row.val}</span>
             </div>
           ))}
@@ -236,11 +234,11 @@ function TrackingPanel({ location, onClear }) {
 
           <button
             onClick={onClear}
+            className="btn-ghost"
             style={{
-              padding: '6px 12px', borderRadius: 'var(--r-sm)', background: 'rgba(244, 63, 94, 0.1)',
-              border: '1px solid rgba(244, 63, 94, 0.25)', color: '#FDA4AF',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-              fontSize: '11px', fontWeight: '700', transition: 'all 0.2s',
+              padding: '6px 12px', borderRadius: 'var(--r-sm)', color: 'var(--c-error)',
+              display: 'flex', alignItems: 'center', gap: '4px',
+              fontSize: '11px', fontWeight: '700'
             }}
           >
             Clear
@@ -397,35 +395,34 @@ export default function MapComponent({
             alignItems: "center",
             gap: "9px",
             padding: "10px 18px",
-            background: "linear-gradient(135deg, rgba(11, 15, 25, 0.92) 0%, rgba(15, 23, 42, 0.95) 100%)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(56, 189, 248, 0.35)",
+            background: "var(--c-surface)",
+            border: "1px solid var(--c-primary-300)",
             borderRadius: "var(--r-full)",
-            color: "#F8FAFC",
+            color: "var(--text-primary)",
             fontSize: "12.5px",
             fontWeight: "700",
             fontFamily: "var(--font-sans)",
             cursor: gpsLoading ? "not-allowed" : "pointer",
             transition: "all 0.25s var(--ease-out)",
-            boxShadow: "0 10px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2)",
+            boxShadow: "var(--shadow-md)",
             userSelect: "none",
           }}
           onMouseEnter={e => {
             if (!gpsLoading) {
               e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-              e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.7)';
-              e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.4)';
+              e.currentTarget.style.borderColor = 'var(--c-primary-500)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
             }
           }}
           onMouseLeave={e => {
             e.currentTarget.style.transform = 'translateY(0) scale(1)';
-            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.35)';
-            e.currentTarget.style.boxShadow = '0 10px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.2)';
+            e.currentTarget.style.borderColor = 'var(--c-primary-300)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
           }}
         >
           <div style={{
             width: '24px', height: '24px', borderRadius: '50%',
-            background: 'rgba(56, 189, 248, 0.15)',
+            background: 'var(--c-primary-50)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
             <TargetCrosshairIcon loading={gpsLoading} />
@@ -478,7 +475,7 @@ export default function MapComponent({
               height: '20px',
               borderRadius: '50%',
               border: '2px solid white',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              boxShadow: 'var(--shadow-md)',
             }} />
             {m.label && (
               <Popup

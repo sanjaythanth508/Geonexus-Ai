@@ -59,8 +59,7 @@ export default function AnalysisPanel({ location, onResult }) {
 
   return (
     <div style={{
-      background: 'var(--glass-bg)',
-      backdropFilter: 'blur(20px)',
+      background: 'var(--c-surface)',
       border: '1px solid var(--border-default)',
       borderRadius: 'var(--r-lg)',
       padding: '20px',
@@ -71,8 +70,8 @@ export default function AnalysisPanel({ location, onResult }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
         <div style={{
           width: '32px', height: '32px', borderRadius: '10px',
-          background: 'rgba(34, 211, 238, 0.12)', border: '1px solid rgba(34, 211, 238, 0.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cyan)'
+          background: 'var(--c-primary-50)', border: '1px solid var(--c-primary-200)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--c-primary-600)'
         }}>
           <CpuIcon />
         </div>
@@ -95,7 +94,7 @@ export default function AnalysisPanel({ location, onResult }) {
             value={industryType}
             onChange={(e) => setIndustryType(e.target.value)}
             className="input-field"
-            style={{ cursor: 'pointer', background: 'rgba(10, 14, 26, 0.85)' }}
+            style={{ cursor: 'pointer', background: 'var(--c-surface-alt)' }}
           >
             {industryTypes.map((t) => (
               <option key={t} value={t}>
@@ -108,11 +107,11 @@ export default function AnalysisPanel({ location, onResult }) {
         {/* Selected Coordinates Status Pill */}
         <div style={{
           padding: '10px 14px', borderRadius: 'var(--r-md)',
-          background: latitude != null ? 'rgba(34,211,238,0.06)' : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${latitude != null ? 'rgba(34,211,238,0.2)' : 'var(--border-subtle)'}`,
+          background: latitude != null ? 'var(--c-primary-50)' : 'var(--c-surface-alt)',
+          border: `1px solid ${latitude != null ? 'var(--c-primary-300)' : 'var(--border-subtle)'}`,
           display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12.5px'
         }}>
-          <div style={{ color: latitude != null ? 'var(--cyan)' : 'var(--text-muted)', display: 'flex' }}>
+          <div style={{ color: latitude != null ? 'var(--c-primary-600)' : 'var(--text-muted)', display: 'flex' }}>
             <MapPinIcon />
           </div>
           <span style={{ color: latitude != null ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: latitude != null ? '600' : 'normal' }}>
@@ -126,10 +125,10 @@ export default function AnalysisPanel({ location, onResult }) {
         {error && (
           <div style={{
             padding: '10px 12px', borderRadius: 'var(--r-sm)',
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-            color: '#FCA5A5', fontSize: '12px', fontWeight: '600'
+            background: 'var(--c-surface)', border: '1px solid rgba(239,68,68,0.25)',
+            color: 'var(--c-error)', fontSize: '12px', fontWeight: '600'
           }}>
-            ⚠️ {error}
+            ️ {error}
           </div>
         )}
 

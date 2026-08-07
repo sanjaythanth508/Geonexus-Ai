@@ -81,50 +81,64 @@ def find_better_nearby_location_ondemand(latitude: float, longitude: float, indu
         layers = get_layers()
         if hasattr(layers, "indl_est") and layers.indl_est is not None and len(layers.indl_est) > 0:
             estates_wgs = layers.indl_est.to_crs("EPSG:4326")
+            
+            # Find all GIDCs within 20km first
+            valid_estates = []
             for geom in estates_wgs.geometry:
                 if geom is not None and not geom.is_empty:
                     centroid = geom.centroid
-                    eval_coord(centroid.y, centroid.x)
+                    d = haversine_km(latitude, longitude, centroid.y, centroid.x)
+                    if d <= 20.0:
+                        valid_estates.append((d, centroid.y, centroid.x))
+            
+            if len(valid_estates) > 0:
+                # Sort by distance so we check closest ones first
+                valid_estates.sort()
+                
+                # Evaluate the top 8 closest GIDCs to optimize speed & coverage
+                for d, cy, cx in valid_estates[:8]:
+                    eval_coord(cy, cx)
     except Exception as e:
         print(f"[GeoNexus] Note: GIDC/Industrial Estates search error: {e}")
 
-    # If Industrial Estates search yielded a significant improvement (score gain >= 1.5), return it immediately
-    if best_res and best_score >= current_score + 1.5:
+    # If GIDC search yielded a better score, return it immediately
+    if best_res and best_score > current_score:
         return sanitize_nan(best_res)
 
     # =========================================================================
-    # STEP 2: 4-Direction Gradient Search (North, East, South, West)
+    # STEP 2: Gradient Climb Search (Only run if GIDC search did not improve score)
     # =========================================================================
-    # Sample 5 km step in 4 cardinal directions: North (0deg), East (90deg), South (180deg), West (270deg)
-    directions = [0, 90, 180, 270]
-    direction_scores = {}
+    # Start climbing from original coordinates in 8 directions up to 20km
+    current_lat = latitude
+    current_lon = longitude
+    step_size_km = 4.0
+    directions = [0, 45, 90, 135, 180, 225, 270, 315]
 
-    for deg in directions:
-        plat, plon = get_coordinates_at_distance(latitude, longitude, 5.0, deg)
-        res = eval_coord(plat, plon)
-        if res:
-            direction_scores[deg] = res["mcda_final_suitability_score"]
+    for iteration in range(3):
+        improved = False
+        best_step_lat = current_lat
+        best_step_lon = current_lon
 
-    # Pick the direction that gave the highest score
-    best_dir = None
-    top_dir_score = current_score
+        for deg in directions:
+            plat, plon = get_coordinates_at_distance(current_lat, current_lon, step_size_km, deg)
+            
+            # Distance constraint check from the starting location
+            if haversine_km(latitude, longitude, plat, plon) <= 20.0:
+                res = eval_coord(plat, plon)
+                if res:
+                    best_step_lat = plat
+                    best_step_lon = plon
+                    improved = True
 
-    for deg, sc in direction_scores.items():
-        if sc > top_dir_score:
-            top_dir_score = sc
-            best_dir = deg
-
-    # Walk along the promising direction up to 20 km
-    if best_dir is not None:
-        for dist in [8.0, 11.0, 14.0, 17.0, 19.5]:
-            plat, plon = get_coordinates_at_distance(latitude, longitude, dist, best_dir)
-            eval_coord(plat, plon)
-    else:
-        # Check intercardinal directions (NE, SE, SW, NW) at 10km and 18km if 5km sample did not find gradient
-        for deg in [45, 135, 225, 315]:
-            for dist in [8.0, 15.0, 19.0]:
-                plat, plon = get_coordinates_at_distance(latitude, longitude, dist, deg)
-                eval_coord(plat, plon)
+        if improved:
+            # Move the center of the search to the newly discovered better location
+            current_lat = best_step_lat
+            current_lon = best_step_lon
+        else:
+            # Reduce step size to narrow down the search when stuck
+            step_size_km /= 2.0
+            if step_size_km < 1.0:
+                break
 
     if best_res and best_score > current_score:
         return sanitize_nan(best_res)

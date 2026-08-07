@@ -49,14 +49,14 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
-      background: 'rgba(3, 7, 18, 0.85)', backdropFilter: 'blur(16px)',
+      background: 'var(--border-default)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 'clamp(16px, 4vw, 32px)', overflowY: 'auto'
     }}>
       <div style={{
         maxWidth: '960px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
-        background: 'rgba(11, 15, 25, 0.95)', border: '1px solid rgba(56, 189, 248, 0.3)',
-        borderRadius: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(56, 189, 248, 0.1)',
+        background: 'var(--c-surface)', border: '1px solid var(--border-default)',
+        borderRadius: '24px', boxShadow: 'var(--shadow-xl)',
         padding: 'clamp(24px, 4vw, 36px)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)',
         position: 'relative'
       }} className="anim-scaleUp">
@@ -66,13 +66,13 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
           onClick={onClose}
           style={{
             position: 'absolute', top: '20px', right: '20px',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)',
             borderRadius: '50%', width: '36px', height: '36px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'var(--text-secondary)', cursor: 'pointer', transition: 'all 0.2s'
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
         >
           <CloseIcon />
         </button>
@@ -81,10 +81,10 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
         <div style={{ marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px',
-            borderRadius: '20px', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.25)',
-            fontSize: '11px', fontWeight: '800', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px'
+            borderRadius: '20px', background: 'var(--c-primary-50)', border: '1px solid var(--c-primary-200)',
+            fontSize: '11px', fontWeight: '800', color: 'var(--c-primary-700)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px'
           }}>
-            ⚖️ Comparative Optimization Analysis
+            ️ Comparative Optimization Analysis
           </div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '900', margin: 0 }}>
             Selected Site vs. Optimized Nearby Site
@@ -100,16 +100,16 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr', gap: '16px', alignItems: 'center', marginBottom: '28px' }}>
           {/* Selected location */}
           <div style={{
-            background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)',
+            background: 'var(--c-error-light)', border: '1px solid var(--c-error)',
             borderRadius: '18px', padding: '20px', textAlign: 'center'
           }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              📍 Selected Location
+            <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--c-error)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+               Selected Location
             </span>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: '900', color: '#EF4444', margin: '8px 0 2px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: '900', color: 'var(--c-error)', margin: '8px 0 2px' }}>
               {selScore.toFixed(1)}
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
               {selectedData.district || 'Gujarat'} ({selLat ? selLat.toFixed(3) : ''}°, {selLon ? selLon.toFixed(3) : ''}°)
             </span>
           </div>
@@ -117,26 +117,26 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
           {/* Gain badge */}
           <div style={{ textAlign: 'center' }}>
             <div style={{
-              background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
-              borderRadius: '12px', padding: '10px 8px', color: '#10B981', fontWeight: '800', fontSize: '13px'
+              background: 'var(--c-success-light)', border: '1px solid var(--c-success)',
+              borderRadius: '12px', padding: '10px 8px', color: 'var(--c-success)', fontWeight: '800', fontSize: '13px'
             }}>
               +{scoreDiff} pts
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px' }}>Score Gain</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>Score Gain</div>
             </div>
           </div>
 
           {/* Suggested location */}
           <div style={{
-            background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.3)',
+            background: 'var(--c-success-light)', border: '1px solid var(--c-success)',
             borderRadius: '18px', padding: '20px', textAlign: 'center'
           }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              💡 Optimized Suggestion
+            <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--c-success)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+               Optimized Suggestion
             </span>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: '900', color: '#10B981', margin: '8px 0 2px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: '900', color: 'var(--c-success)', margin: '8px 0 2px' }}>
               {sugScore.toFixed(1)}
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
               {suggestionData.district || 'Gujarat'} ({sugLat ? sugLat.toFixed(3) : ''}°, {sugLon ? sugLon.toFixed(3) : ''}°)
             </span>
           </div>
@@ -144,31 +144,31 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
 
         {/* Infrastructure comparison */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '28px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
-              🛣️ Highway Link
+          <div style={{ background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
+              ️ Highway Link
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Selected:</span>
-              <span style={{ fontWeight: '700', color: '#38BDF8' }}>{selectedData.nearest_highway_ref || 'NH Corridor'}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Selected:</span>
+              <span style={{ fontWeight: '700', color: 'var(--c-primary-600)' }}>{selectedData.nearest_highway_ref || 'NH Corridor'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Suggested:</span>
-              <span style={{ fontWeight: '700', color: '#10B981' }}>{suggestionData.nearest_highway_ref || 'NH Corridor'}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Suggested:</span>
+              <span style={{ fontWeight: '700', color: 'var(--c-success)' }}>{suggestionData.nearest_highway_ref || 'NH Corridor'}</span>
             </div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
-              🌊 Waterway Access
+          <div style={{ background: 'var(--c-surface-alt)', border: '1px solid var(--border-subtle)', borderRadius: '14px', padding: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '8px' }}>
+               Waterway Access
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Selected:</span>
-              <span style={{ fontWeight: '700', color: '#A855F7' }}>{selectedData.nearest_river_name || 'Regional River'}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Selected:</span>
+              <span style={{ fontWeight: '700', color: 'var(--c-primary-600)' }}>{selectedData.nearest_river_name || 'Regional River'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Suggested:</span>
-              <span style={{ fontWeight: '700', color: '#10B981' }}>{suggestionData.nearest_river_name || 'Regional River'}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Suggested:</span>
+              <span style={{ fontWeight: '700', color: 'var(--c-success)' }}>{suggestionData.nearest_river_name || 'Regional River'}</span>
             </div>
           </div>
         </div>
@@ -178,14 +178,14 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: '800', marginBottom: '14px' }}>
             Metrics Comparison Breakdown
           </h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+          <div className="responsive-table-container">
+            <table className="responsive-table">
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
-                  <th style={{ padding: '10px 14px', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '11px' }}>Evaluation Metric</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'right', color: '#EF4444', fontSize: '11px' }}>Selected Score</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'right', color: '#10B981', fontSize: '11px' }}>Suggested Score</th>
-                  <th style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--cyan)', fontSize: '11px' }}>Delta</th>
+                <tr>
+                  <th style={{ color: 'var(--text-secondary)' }}>Evaluation Metric</th>
+                  <th style={{ textAlign: 'right', color: 'var(--c-error)' }}>Selected Score</th>
+                  <th style={{ textAlign: 'right', color: 'var(--c-success)' }}>Suggested Score</th>
+                  <th style={{ textAlign: 'right', color: 'var(--c-primary-600)' }}>Delta</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,17 +195,17 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
                   const diff = sugVal - selVal;
 
                   return (
-                    <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                      <td style={{ padding: '10px 14px', textTransform: 'capitalize', fontWeight: '600' }}>
+                    <tr key={key}>
+                      <td style={{ textTransform: 'capitalize', fontWeight: '600' }}>
                         {key.replace(/_/g, ' ')}
                       </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#EF4444' }}>
+                      <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--c-error)' }}>
                         {selVal.toFixed(1)}
                       </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '700', color: '#10B981' }}>
+                      <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--c-success)' }}>
                         {sugVal.toFixed(1)}
                       </td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '800', color: diff >= 0 ? '#10B981' : '#F43F5E' }}>
+                      <td style={{ textAlign: 'right', fontWeight: '800', color: diff >= 0 ? 'var(--c-success)' : 'var(--c-error)' }}>
                         {diff >= 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)}
                       </td>
                     </tr>
@@ -217,14 +217,14 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
         </div>
 
         {/* Modal Action Footer */}
-        <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', gap: '14px', justifyContent: 'flex-end', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
           {onViewMap && (
             <button
               onClick={() => { onClose(); onViewMap(); }}
+              className="btn-primary"
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px', padding: '11px 22px',
-                background: 'var(--grad-btn)', border: 'none', borderRadius: '12px',
-                color: '#fff', fontWeight: '800', fontSize: '13.5px', cursor: 'pointer'
+                borderRadius: '12px', fontWeight: '800', fontSize: '13.5px'
               }}
             >
               <MapIcon /> View Both on Map
@@ -232,9 +232,10 @@ export default function LocationCompareModal({ isOpen, onClose, selectedData, su
           )}
           <button
             onClick={onClose}
+            className="btn-ghost"
             style={{
-              padding: '11px 20px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer'
+              padding: '11px 20px', borderRadius: '12px',
+              fontWeight: '700', fontSize: '13.5px'
             }}
           >
             Close Comparison
