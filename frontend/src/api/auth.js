@@ -9,6 +9,12 @@ export const sendOTP = (email) =>
 export const verifyOTP = (email, otp) =>
   api.post('users/verify-otp/', { email, otp });
 
+export const sendResetOtp = (email) =>
+  api.post('users/send-reset-otp/', { email });
+
+export const resetPassword = (email, otp, new_password) =>
+  api.post('users/reset-password/', { email, otp, new_password });
+
 
 export const login = (username, password) =>
   api.post('users/token/', { username, password });

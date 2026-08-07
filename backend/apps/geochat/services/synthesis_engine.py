@@ -305,11 +305,140 @@ def _classify_greeting(msg_lower: str) -> Optional[str]:
     return None
 
 
+def _handle_feature_guide(msg_lower: str) -> Optional[str]:
+    """
+    Provides clear, step-by-step user guides for every feature in GeoNexus AI
+    when asked questions like 'How can I use {feature name}?'.
+    Explains the UI flow, steps, and capabilities in user-friendly language
+    without technical backend/code clutter.
+    """
+    msg = msg_lower.strip()
+
+    is_how_to = any(k in msg for k in [
+        "how can i use", "how do i use", "how to use", "how use",
+        "how does", "how to run", "how to create", "how to perform",
+        "how to search", "how to export", "how to compare", "how to view",
+        "explain feature", "what is feature", "how works"
+    ]) or ("how" in msg and any(f in msg for f in ["compare", "analysis", "node", "suggest", "pdf", "chat"]))
+
+    if not is_how_to:
+        return None
+
+    # 1. Compare Feature (Two Points, Two Industries, Matrix)
+    if any(k in msg for k in ["compare", "comparison", "two point", "two location", "two industr", "matrix"]):
+        return (
+            "### ⚖️ How to Use the Compare & Analyze Feature\n\n"
+            "The **Compare & Analyze** module allows you to evaluate multiple locations or industries side-by-side. "
+            "You can access it from the **Compare & Analyze** card on the Home page or via `/compare` in your browser.\n\n"
+            "Here are the **3 comparison modes** available:\n\n"
+            "---\n\n"
+            "#### 📍 Mode 1: Compare Two Locations (`/compare/two-points`)\n"
+            "*Use this when you want to evaluate two different sites for the same industry type.*\n"
+            "1. **Step 1 — Select Industry**: Pick your target industry (e.g. Chemical, Cotton, Engineering) from the dropdown.\n"
+            "2. **Step 2 — Pick Location A**: Click anywhere inside Gujarat on the map to place the Site A pin (Blue).\n"
+            "3. **Step 3 — Pick Location B**: Click on the map to place the Site B pin (Orange).\n"
+            "4. **Step 4 — View Comparison**: Click **🚀 Run Comparison**. You will see a side-by-side score card, winner banner, criteria breakdown table showing score differences (Δ Delta), and an **Export PDF** button.\n\n"
+            "---\n\n"
+            "#### 🏭 Mode 2: Compare Two Industries (`/compare/two-industries`)\n"
+            "*Use this when you have a single location pin and want to see which of two industries fits it better.*\n"
+            "1. **Step 1 — Pick Location**: Click inside Gujarat on the map to drop your evaluation pin.\n"
+            "2. **Step 2 — Select Industries (Single Page)**: Select **Industry A** and **Industry B** side-by-side from the multi-selection panels.\n"
+            "3. **Step 3 — View Comparison**: Click **🚀 Run Comparison**. The system scores both industries for that exact site and displays the winning industry, score breakdown, and visualization bars.\n\n"
+            "---\n\n"
+            "#### 📊 Mode 3: General Matrix Compare (`/compare/general`)\n"
+            "*Use this for comprehensive multi-industry × multi-location decision matrix analysis.*\n"
+            "1. **Step 1 — Multi-Select Industries**: Check **2 or more** industry types (e.g., Cotton, Chemical, Pharma, Engineering).\n"
+            "2. **Step 2 — Pick Location A**: Place Pin A (Green) on the map.\n"
+            "3. **Step 3 — Pick Location B**: Place Pin B (Amber) on the map.\n"
+            "4. **Step 4 — View Matrix**: Click **🚀 Run Matrix**. The system runs an **N × 2 prediction matrix** showing all scores, highlights the **★ BEST cell** in green, identifies row/column winners, and provides a full PDF export.\n\n"
+            "💡 **Tip**: All compare reports can be downloaded as PDF documents using the **📄 Export PDF** button at the bottom of the results page!"
+        )
+
+    # 2. Search Suggested Area (20km)
+    if any(k in msg for k in ["suggest", "20km", "20 km", "nearest point", "better location"]):
+        return (
+            "### 🔍 How to Use 'Search Suggested Area (20km)'\n\n"
+            "The **Search Suggested Area (20km)** feature helps you discover higher-scoring alternative sites within a 20 km radius of your selected point.\n\n"
+            "#### How to Trigger Search:\n"
+            "1. Run a **New Analysis** (`/analysis`) for any location in Gujarat.\n"
+            "2. On the **Prediction Report** page, scroll down to the bottom control bar.\n"
+            "3. Click the **🔍 Search Suggested Area (20km)** button.\n\n"
+            "#### How the Optimization Engine Works:\n"
+            "- 🏢 **Priority 1 (GIDC Estates Scan)**: It first scans nearby GIDC and Industrial Estates (`IndustrialEstates.shp`) within 20 km for established infrastructure.\n"
+            "- 🧭 **Priority 2 (4-Directional Gradient Walk)**: If no GIDC point is higher, it performs a 4-directional search (North, East, South, West at 5km steps) walking in the direction of increasing suitability scores up to 20 km.\n\n"
+            "#### Outcome & Results:\n"
+            "- 🎯 **If a better site is found**: The report presents the suggested location, score increase (+Δ), distance from original site, and a **View in Map** button to display both points on an interactive map.\n"
+            "- 🟢 **If your site is already optimal**: The engine displays confirmation:\n"
+            "  > *\"Optimal Location Confirmed! This selected location is the best site for your [Industry] facility within this 20 km region. No higher-scoring location was found nearby.\"*"
+        )
+
+    # 3. New Analysis (`/analysis`)
+    if any(k in msg for k in ["analysis", "suitability analysis", "new analysis", "score a site", "predict"]):
+        return (
+            "### 🗺️ How to Run a New Suitability Analysis\n\n"
+            "The **New Analysis** engine evaluates any site in Gujarat for industrial suitability using LightGBM machine learning models and MCDA weighted criteria.\n\n"
+            "#### Step-by-Step Flow:\n"
+            "1. **Navigate to New Analysis**: Click **Start Analysis** on the Home page or go to `/analysis`.\n"
+            "2. **Select Industry**: Pick your target industry type (Cotton, Chemical, Pharmaceutical, Engineering, etc.) from the dropdown.\n"
+            "3. **Drop Map Pin**: Click anywhere on the interactive Gujarat map to select your target location coordinates.\n"
+            "4. **Run Analysis**: Click the **🚀 Run Analysis** button.\n"
+            "5. **Review Report**: You will be redirected to the **Prediction Report** (`/report`) displaying:\n"
+            "   - **Overall MCDA Score** (0–100) & LightGBM Verdict (Excellent/Good/Moderate/Poor).\n"
+            "   - **Radar Chart** & Criteria Breakdown (Highways, Substations, Rivers, Land Cost, Slope, Flood Risk, etc.).\n"
+            "   - **GIS Proximity Data** from live shapefiles.\n"
+            "   - Options to **Save Node**, **Export PDF**, or **Search Suggested Area (20km)**."
+        )
+
+    # 4. Deployed Nodes (`/nodes`)
+    if any(k in msg for k in ["node", "deployed nodes", "saved nodes", "ask about it"]):
+        return (
+            "### 📁 How to Use Deployed Nodes & 'Ask About It'\n\n"
+            "The **Deployed Nodes** hub is your archive for all saved suitability analysis runs.\n\n"
+            "#### Features & Capabilities:\n"
+            "1. **View Saved Nodes**: Go to **Deployed Nodes** (`/nodes`) to view all your saved site reports as summary cards.\n"
+            "2. **Node Details**: Click any node card to open its **Node Detail** page (`/nodes/:id`), showing full scores, map markers, and criteria.\n"
+            "3. **Export PDF**: Click **Download PDF Report** to get a clean printable document.\n"
+            "4. **🤖 Ask About It**: Click the **\"Ask About It\"** button on any node detail page. This instantly transfers the node's context (coordinates, district, industry, MCDA scores, GIS data) directly into **GeoChat AI**.\n\n"
+            "When you click **Ask About It**, GeoChat automatically generates an executive **📍 SITE ASSESSMENT** report format covering site details, environmental screening, water/soil resources, regulatory checks, risks, and recommendations, followed by interactive Q&A!"
+        )
+
+    # 5. Export PDF
+    if any(k in msg for k in ["pdf", "export pdf", "download report", "download pdf"]):
+        return (
+            "### 📄 How to Export PDF Reports\n\n"
+            "You can export high-resolution structured PDF reports across multiple pages in GeoNexus AI:\n\n"
+            "1. **Prediction Report Page** (`/report`): Click **📄 Export PDF** at the top or bottom of the report.\n"
+            "2. **Node Detail Page** (`/nodes/:id`): Click **📄 Download PDF Report**.\n"
+            "3. **Compare Pages** (`/compare/two-points`, `/compare/two-industries`, `/compare/general`): Click **📄 Export PDF** at the bottom of the results section.\n\n"
+            "The system automatically formats the document into a professional, multi-page layout ready for printing or sharing!"
+        )
+
+    # 6. GeoChat AI (`/chat`)
+    if any(k in msg for k in ["geochat", "chat", "ask ai", "assistant"]):
+        return (
+            "### 💬 How to Use GeoChat AI\n\n"
+            "**GeoChat AI** is your conversational spatial assistant for Gujarat industrial siting and compliance.\n\n"
+            "#### What You Can Ask:\n"
+            "- **Location Suitability**: Enter coordinates and industry (e.g. *\"Evaluate 22.98, 72.38 for chemical industry\"*).\n"
+            "- **Location Comparison**: Ask *\"Which city is better for Cotton: Surat or Ahmedabad?\"*\n"
+            "- **GPCB Regulations**: Ask about Consent to Establish (CTE), Consent to Operate (CTO), CPCB Red/Orange/Green categories, and EIA rules.\n"
+            "- **District Intelligence**: Ask about groundwater stress, literacy rates, climate risk, or health infrastructure in any of Gujarat's 33 districts.\n"
+            "- **Node Deep-Dive**: Click **\"Ask About It\"** from any Deployed Node to generate a full SITE ASSESSMENT report with follow-up Q&A!"
+        )
+
+    return None
+
+
 def _handle_greeting(msg_lower: str, original_message: str) -> Optional[str]:
     """
     Handles all greeting and conversational messages with natural,
     ChatGPT-style warm responses. Returns None if not a greeting.
     """
+    # Check feature guide FIRST
+    feature_guide = _handle_feature_guide(msg_lower)
+    if feature_guide:
+        return feature_guide
+
     greeting_type = _classify_greeting(msg_lower)
     if greeting_type is None:
         return None

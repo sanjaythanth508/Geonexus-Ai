@@ -137,6 +137,120 @@ class VerifyOTPView(APIView):
         return Response({'message': 'Email verified successfully.'}, status=status.HTTP_200_OK)
 
 
+class SendResetOTPView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if email is valid format
+        if not re.match(r"^[\w\.\+\-]+\@[\w\.\-]+\.[\w]{2,}$", email):
+            return Response({'error': 'Invalid email address format'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Check if email already registered (IT MUST EXIST FOR RESET)
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            return Response({'error': 'No user found with this email address.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Generate 6-digit code
+        otp = f"{random.randint(100000, 999999)}"
+        
+        # Save OTP to Database (upsert)
+        verification, created = EmailVerification.objects.update_or_create(
+            email=email.lower(),
+            defaults={'otp': otp, 'is_verified': False, 'created_at': timezone.now()}
+        )
+        
+        # Send Email
+        subject = "Reset your GeoNexus AI Password"
+        from_email = None
+        
+        html_message = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Reset your GeoNexus AI Password</title>
+        </head>
+        <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0e1a; color: #ffffff; padding: 40px 20px; margin: 0; text-align: center;">
+            <div style="max-width: 500px; margin: 0 auto; background: rgba(16, 22, 42, 0.95); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 40px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.03em; background: linear-gradient(135deg, #8B5CF6, #3B82F6, #22D3EE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: #22D3EE; display: inline-block;">
+                        GeoNexus AI
+                    </h1>
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); margin: 20px 0;">
+                
+                <h2 style="font-size: 18px; font-weight: 700; color: #F1F5F9; margin-top: 0; margin-bottom: 12px;">
+                    Password Reset Request
+                </h2>
+                <p style="font-size: 14px; color: #94A3B8; line-height: 1.6; margin-bottom: 25px; text-align: left;">
+                    We received a request to reset the password for your GeoNexus AI account. Please use the 6-digit confirmation code below to proceed:
+                </p>
+                
+                <div style="background: rgba(34, 211, 238, 0.05); border: 1px dashed rgba(34, 211, 238, 0.35); border-radius: 8px; padding: 18px 10px; margin-bottom: 25px;">
+                    <span style="font-size: 38px; font-weight: 900; letter-spacing: 12px; color: #22D3EE; font-family: 'Courier New', Courier, monospace;">
+                        {otp}
+                    </span>
+                </div>
+                
+                <p style="font-size: 12px; color: #64748B; margin-bottom: 20px; text-align: left; line-height: 1.5;">
+                    Security Note: This verification key is strictly valid for the next <strong>10 minutes</strong>. If you did not request a password reset, please ignore this email.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        try:
+            send_mail(subject, "", from_email, [email], html_message=html_message)
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            return Response({'error': f'Failed to send reset email. Details: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return Response({'message': 'Reset code sent successfully.'}, status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        new_password = request.data.get('new_password')
+        
+        if not email or not new_password:
+            return Response({'error': 'Email and new password are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Verify that the email was verified within the last 10 minutes
+        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        verification = EmailVerification.objects.filter(
+            email__iexact=email,
+            is_verified=True,
+            created_at__gte=ten_minutes_ago
+        ).first()
+        
+        if not verification:
+            return Response({'error': 'Email verification required or expired. Send and verify a code first.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            return Response({'error': 'No user found with this email address.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Update the password
+        user.set_password(new_password)
+        user.save()
+        
+        # Delete verification record to prevent reuse
+        verification.delete()
+        
+        return Response({'message': 'Password reset successfully.'}, status=status.HTTP_200_OK)
+
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
@@ -361,5 +475,5 @@ class AvatarUploadView(APIView):
         
         return Response({
             'message': 'Avatar uploaded successfully',
-            'avatar_url': avatar_url
+            'avatar_url': request.build_absolute_uri(avatar_url)
         }, status=status.HTTP_200_OK)

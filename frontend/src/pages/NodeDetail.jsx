@@ -11,6 +11,7 @@ const DownloadIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill=
 const ChatIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
 const MapIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>;
 const SpinIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" style={{ animation: 'spin 0.75s linear infinite', transformOrigin: 'center' }}/></svg>;
+const DeleteIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
 
 export default function NodeDetail() {
   const { id } = useParams();
@@ -21,6 +22,7 @@ export default function NodeDetail() {
   const [project, setProject] = useState(location.state?.project || null);
   const [loading, setLoading] = useState(!location.state?.project);
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
@@ -112,6 +114,22 @@ export default function NodeDetail() {
     }).from(el).save().then(() => setDownloading(false)).catch(() => setDownloading(false));
   };
 
+  const handleDeleteNode = async () => {
+    if (!window.confirm(`Are you sure you want to delete the deployed node "${project.name}"?`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await api.delete(`projects/${project.id}/`);
+      navigate('/nodes');
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || 'Failed to delete the node.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const mapMarkers = latitude != null ? [{ lat: Number(latitude), lon: Number(longitude), label: project.name }] : [];
 
   return (
@@ -188,6 +206,20 @@ export default function NodeDetail() {
             }}
           >
             {downloading ? <><SpinIcon /> Generating...</> : <><DownloadIcon /> Download PDF</>}
+          </button>
+          <button
+            onClick={handleDeleteNode}
+            disabled={deleting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
+              background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)',
+              borderRadius: '10px', color: '#F43F5E', fontWeight: '700', fontSize: '13px',
+              cursor: deleting ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontFamily: 'var(--font-sans)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(244,63,94,0.2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(244,63,94,0.1)'; }}
+          >
+            {deleting ? <><SpinIcon /> Deleting...</> : <><DeleteIcon /> Delete Node</>}
           </button>
         </div>
       </header>

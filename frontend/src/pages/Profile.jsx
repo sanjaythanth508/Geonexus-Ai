@@ -69,7 +69,7 @@ export default function Profile() {
       else delete errs.phone;
     }
     if (name === 'avatarUrl') {
-      if (value && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(value)) errs.avatarUrl = 'Invalid avatar URL (must start with http:// or https://)';
+      if (value && !/^(https?:\/\/|\/)[^\s]*$/i.test(value)) errs.avatarUrl = 'Invalid avatar URL (must start with http://, https://, or /)';
       else delete errs.avatarUrl;
     }
     setValidationErrors(errs);

@@ -107,7 +107,8 @@ export default function AnalysisRun() {
     setLoading(true);
     try {
       const res = await predictSite({ latitude: location.lat, longitude: location.lon, industryType: selectedIndustry });
-      setResult(res);
+      sessionStorage.setItem('last_prediction_report', JSON.stringify(res));
+      navigate('/analysis/result');
     } catch (err) {
       setError(err?.response?.data?.detail || err?.message || 'Analysis failed. Please try again.');
     } finally {
@@ -217,7 +218,6 @@ export default function AnalysisRun() {
       </header>
 
       <main style={{ position: 'relative', zIndex: 1, maxWidth: '960px', margin: '0 auto', padding: 'clamp(28px,4vw,48px) clamp(16px,4vw,40px)' }}>
-        {!result ? (
           <>
             {/* Step label */}
             <div style={{ textAlign: 'center', marginBottom: '36px' }}>
@@ -283,210 +283,6 @@ export default function AnalysisRun() {
               </button>
             </div>
           </>
-        ) : (
-          /* ── Results ── */
-          <div className="anim-fadeIn">
-            {/* Score hero */}
-            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '20px', background: `${badgeBg}`, border: `1px solid ${badgeBorder}`, marginBottom: '16px', fontSize: '12px', fontWeight: '700', color: badgeColor, letterSpacing: '0.05em' }}>
-                ✓ Analysis Complete
-              </div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px,4vw,42px)', fontWeight: '900', margin: '0 0 6px', letterSpacing: '-0.04em' }}>
-                {result.district || 'Gujarat Region'}
-              </h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '15px', margin: '0 0 24px' }}>
-                {selectedIndustry} · {Number(location.lat).toFixed(4)}°N, {Number(location.lon).toFixed(4)}°E
-              </p>
-
-              {/* Score ring */}
-              <div style={{
-                display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
-                padding: '24px 40px', borderRadius: '20px',
-                background: badgeBg, border: `2px solid ${badgeBorder}`,
-                boxShadow: `0 0 40px ${badgeBg}`,
-              }}>
-                <span style={{ fontSize: '12px', fontWeight: '700', color: badgeColor, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Suitability Score</span>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '64px', fontWeight: '900', color: badgeColor, lineHeight: 1, margin: '8px 0 4px' }}>
-                  {scoreNum.toFixed(1)}
-                </div>
-                <span style={{ fontSize: '16px', color: badgeColor, fontWeight: '800' }}>/ 100 — {categoryLabel}</span>
-              </div>
-            </div>
-
-            {/* On-demand Search Suggested Area Action */}
-            {!searchedSuggestion && !searchingSuggestion && (
-              <div style={{
-                background: 'rgba(56, 189, 248, 0.06)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
-                borderRadius: '16px',
-                padding: '16px 20px',
-                marginBottom: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '16px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '24px' }}>💡</span>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: '800', color: 'var(--cyan)', fontFamily: 'var(--font-display)' }}>
-                      Location Optimization Available
-                    </h4>
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      Scan GIDC industrial estates and 4-directional gradient within 20 km to find a higher-scoring location for <b>{selectedIndustry}</b>.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleFindSuggestion}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: '12px',
-                    fontSize: '13.5px',
-                    fontWeight: '800',
-                    background: 'var(--grad-btn)',
-                    border: 'none',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-sans)',
-                    boxShadow: '0 4px 14px rgba(56,189,248,0.25)',
-                  }}
-                >
-                  💡 Search Suggested Area (20km)
-                </button>
-              </div>
-            )}
-
-            {searchingSuggestion && (
-              <div style={{
-                background: 'rgba(56, 189, 248, 0.08)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
-                borderRadius: '16px',
-                padding: '16px 20px',
-                marginBottom: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'center',
-                gap: '12px',
-                color: 'var(--cyan)',
-                fontWeight: '700',
-                fontSize: '14px'
-              }}>
-                <span style={{ fontSize: '18px' }}>🔄</span> Searching GIDC industrial estates & 4-directional gradient within 20 km...
-              </div>
-            )}
-
-            {searchedSuggestion && suggestion && suggestion.mcda_final_suitability_score && (
-              <div style={{
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                borderRadius: '16px',
-                padding: '16px 20px',
-                marginBottom: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                justify: 'space-between',
-                gap: '16px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '24px' }}>💡</span>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: '800', color: '#10B981', fontFamily: 'var(--font-display)' }}>
-                      Optimized Nearby Location Found!
-                    </h4>
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      Nearest this location (<b>{suggestion.district || 'Gujarat'} Region</b>) is better for your specific <b>{selectedIndustry}</b> industry with a suitability score of <b>{Number(suggestion.mcda_final_suitability_score).toFixed(1)}/100</b>.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    sessionStorage.setItem('better_site_suggestion', JSON.stringify(suggestion));
-                    navigate('/analysis/suggestion');
-                  }}
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '10px',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    background: '#10B981',
-                    border: 'none',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    fontFamily: 'var(--font-sans)',
-                    boxShadow: '0 4px 12px rgba(16,185,129,0.2)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(16,185,129,0.3)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.2)'; }}
-                >
-                  View Suggestion →
-                </button>
-              </div>
-            )}
-
-            {searchedSuggestion && (!suggestion || !suggestion.mcda_final_suitability_score) && (
-              <div style={{
-                background: 'rgba(56, 189, 248, 0.08)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
-                borderRadius: '16px',
-                padding: '16px 20px',
-                marginBottom: '28px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <span style={{ fontSize: '24px' }}>🌟</span>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: '800', color: 'var(--cyan)', fontFamily: 'var(--font-display)' }}>
-                    Optimal Location Confirmed!
-                  </h4>
-                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                    This selected location is the best site for your <b>{selectedIndustry}</b> facility within this 20 km region. No higher-scoring location was found nearby.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Quick stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '32px' }}>
-              {[
-                { label: 'Highway Link', value: result.nearest_highway_ref || 'NH Corridor', color: '#38BDF8' },
-                { label: 'Water Access', value: result.nearest_river_name || 'Regional River', color: '#A855F7' },
-                { label: 'ML Prediction', value: result.lightgbm_predicted_label || categoryLabel, color: badgeColor },
-              ].map(item => (
-                <div key={item.label} style={{ padding: '16px 20px', borderRadius: '14px', background: 'rgba(11,15,25,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', margin: '0 0 6px' }}>{item.label}</p>
-                  <p style={{ fontSize: '15px', fontWeight: '800', color: item.color, margin: 0, fontFamily: 'var(--font-display)' }}>{item.value}</p>
-                </div>
-              ))}
-            </div>
-
-            {error && (
-              <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: '#FCA5A5', fontSize: '14px', marginBottom: '24px' }}>
-                ⚠️ {error}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={handleViewFullReport}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 28px', background: 'var(--grad-btn)', border: 'none', borderRadius: '14px', color: '#fff', fontWeight: '800', fontSize: '15px', cursor: 'pointer', boxShadow: '0 6px 24px rgba(56,189,248,0.2)', fontFamily: 'var(--font-sans)' }}>
-                📄 View Full Report
-              </button>
-              <button onClick={handleDeployNode} disabled={savingNode}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 28px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '14px', color: '#10B981', fontWeight: '800', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'var(--font-sans)', opacity: savingNode ? 0.7 : 1 }}>
-                {savingNode ? <><SpinIcon /> Saving...</> : '📍 Deploy Node'}
-              </button>
-              <button onClick={() => navigate('/analysis')}
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 28px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: 'var(--text-secondary)', fontWeight: '700', fontSize: '15px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'var(--font-sans)' }}>
-                🔄 New Analysis
-              </button>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

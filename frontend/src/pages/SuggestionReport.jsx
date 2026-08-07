@@ -137,7 +137,7 @@ export default function SuggestionReport() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <button
-            onClick={() => navigate('/report')}
+            onClick={() => navigate('/report', { state: { from: '/analysis/suggestion' } })}
             style={{
               display: 'flex', alignItems: 'center', gap: '7px', padding: '7px 14px',
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
@@ -147,7 +147,7 @@ export default function SuggestionReport() {
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'; e.currentTarget.style.color = '#10B981'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
           >
-            <ArrowLeftIcon /> Back to Selected Report
+            <ArrowLeftIcon /> View Selected Location Report
           </button>
 
           <div style={{

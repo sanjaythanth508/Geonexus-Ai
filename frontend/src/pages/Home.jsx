@@ -23,6 +23,16 @@ const AnalysisIcon = () => (
     <line x1="16" y1="6" x2="16" y2="22"/>
   </svg>
 );
+const CompareIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="8" y1="6" x2="21" y2="6"/>
+    <line x1="8" y1="12" x2="21" y2="12"/>
+    <line x1="8" y1="18" x2="21" y2="18"/>
+    <line x1="3" y1="6" x2="3.01" y2="6"/>
+    <line x1="3" y1="12" x2="3.01" y2="12"/>
+    <line x1="3" y1="18" x2="3.01" y2="18"/>
+  </svg>
+);
 const ArrowIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="5" y1="12" x2="19" y2="12"/>
@@ -103,6 +113,23 @@ const FEATURES = [
     tagBg: 'rgba(16,185,129,0.12)',
     tagColor: '#10B981',
     stats: ['MCDA Scoring', 'LightGBM AI', 'GIS Proximity'],
+  },
+  {
+    id: 'compare',
+    icon: <CompareIcon />,
+    title: 'Compare & Analyze',
+    subtitle: 'Multi-Mode Location Intelligence',
+    description: 'Compare two locations for the same industry, or evaluate one site across two industry types. Run full matrix comparisons for comprehensive insights.',
+    cta: 'Start Comparing',
+    path: '/compare',
+    gradient: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.08))',
+    border: 'rgba(245,158,11,0.3)',
+    glow: 'rgba(245,158,11,0.15)',
+    accent: '#F59E0B',
+    tag: 'Multi-Mode',
+    tagBg: 'rgba(245,158,11,0.12)',
+    tagColor: '#F59E0B',
+    stats: ['Two-Point Compare', 'Industry Matrix', 'PDF Reports'],
   },
 ];
 

@@ -85,7 +85,7 @@ export default function SuggestionMap() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'all' }}>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/report')}
             style={{
               display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px',
               background: 'rgba(11,15,25,0.9)', border: '1px solid rgba(255,255,255,0.15)',

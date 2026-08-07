@@ -200,12 +200,40 @@ export default function PredictionReport() {
         backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-subtle)',
         position: 'sticky', top: 0, zIndex: 100,
       }}>
-        <Link to="/home" style={{
-          display: 'inline-flex', alignItems: 'center', gap: '8px',
-          color: 'var(--cyan)', textDecoration: 'none', fontWeight: '700', fontSize: '14px',
-        }}>
-          <ArrowLeftIcon /> Home
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => {
+              if (location.state?.from === '/analysis/suggestion') {
+                navigate('/analysis/suggestion');
+              } else {
+                navigate('/analysis/result');
+              }
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '7px 14px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              color: 'var(--text-secondary)', fontWeight: '600', fontSize: '13px',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(56,189,248,0.4)'; e.currentTarget.style.color = 'var(--cyan)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          >
+            <ArrowLeftIcon /> {location.state?.from === '/analysis/suggestion' ? 'Back to Suggestion' : 'Back to Analysis'}
+          </button>
+          <button
+            onClick={() => navigate('/home')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '7px 14px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+              color: 'var(--text-muted)', fontWeight: '600', fontSize: '13px',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)', transition: 'all 0.2s',
+            }}
+          >
+            🏠 Home
+          </button>
+        </div>
 
         <button
           onClick={handlePdfExport}

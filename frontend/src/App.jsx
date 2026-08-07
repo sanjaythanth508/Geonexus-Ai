@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
 import PredictionReport from './pages/PredictionReport';
@@ -10,8 +11,13 @@ import NodesList from './pages/NodesList';
 import NodeDetail from './pages/NodeDetail';
 import AnalysisMap from './pages/AnalysisMap';
 import AnalysisRun from './pages/AnalysisRun';
+import AnalysisResult from './pages/AnalysisResult';
 import SuggestionReport from './pages/SuggestionReport';
 import SuggestionMap from './pages/SuggestionMap';
+import CompareHub from './pages/CompareHub';
+import CompareTwoPoints from './pages/CompareTwoPoints';
+import CompareTwoIndustries from './pages/CompareTwoIndustries';
+import CompareGeneral from './pages/CompareGeneral';
 
 /* ── Premium Loading Screen ── */
 function LoadingScreen() {
@@ -79,6 +85,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login"         element={<Login />} />
       <Route path="/register"      element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       {/* New home page - post login landing */}
       <Route path="/home"          element={<PrivateRoute><Home /></PrivateRoute>} />
       {/* Redirect legacy /dashboard to /home */}
@@ -92,9 +99,15 @@ function AppRoutes() {
       {/* New analysis flow */}
       <Route path="/analysis"      element={<PrivateRoute><AnalysisMap /></PrivateRoute>} />
       <Route path="/analysis/run"  element={<PrivateRoute><AnalysisRun /></PrivateRoute>} />
+      <Route path="/analysis/result" element={<PrivateRoute><AnalysisResult /></PrivateRoute>} />
       <Route path="/analysis/suggestion" element={<PrivateRoute><SuggestionReport /></PrivateRoute>} />
       <Route path="/analysis/suggestion-map" element={<PrivateRoute><SuggestionMap /></PrivateRoute>} />
-      <Route path="/"              element={<HomeRedirect />} />
+      {/* Compare feature */}
+      <Route path="/compare" element={<PrivateRoute><CompareHub /></PrivateRoute>} />
+      <Route path="/compare/two-points" element={<PrivateRoute><CompareTwoPoints /></PrivateRoute>} />
+      <Route path="/compare/two-industries" element={<PrivateRoute><CompareTwoIndustries /></PrivateRoute>} />
+      <Route path="/compare/general" element={<PrivateRoute><CompareGeneral /></PrivateRoute>} />
+      <Route path="/" element={<HomeRedirect />} />
     </Routes>
   );
 }
