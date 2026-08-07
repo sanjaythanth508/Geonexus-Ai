@@ -79,11 +79,11 @@ export default function NodeDetail() {
 
   const scoreNum = Number(mcda_final_suitability_score) || 0;
   let categoryLabel = 'Moderate', badgeColor = 'var(--c-warning)', badgeBg = 'var(--c-warning-light)', badgeBorder = 'var(--border-subtle)';
-  if (scoreNum >= 80 || lightgbm_predicted_label?.toLowerCase().includes('high') || lightgbm_predicted_label?.toLowerCase().includes('excellent')) {
+  if (scoreNum >= 80) {
     categoryLabel = 'Excellent'; badgeColor = 'var(--c-success)'; badgeBg = 'var(--c-success-light)';
-  } else if (scoreNum >= 60 || lightgbm_predicted_label?.toLowerCase().includes('good')) {
+  } else if (scoreNum >= 60) {
     categoryLabel = 'Good'; badgeColor = 'var(--c-info)'; badgeBg = 'var(--c-info-light)';
-  } else if (scoreNum >= 40 || lightgbm_predicted_label?.toLowerCase().includes('moderate')) {
+  } else if (scoreNum >= 40) {
     categoryLabel = 'Moderate'; badgeColor = 'var(--c-warning)'; badgeBg = 'var(--c-warning-light)';
   } else {
     categoryLabel = 'Poor'; badgeColor = 'var(--c-error)'; badgeBg = 'var(--c-error-light)';
@@ -118,7 +118,7 @@ export default function NodeDetail() {
       margin: [10, 10, 10, 10],
       filename: `GeoNexus_${(project.name || 'Node').replace(/\s+/g, '_')}_Report.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: 'var(--text-primary)' },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }).from(el).save().then(() => setDownloading(false)).catch(() => setDownloading(false));
   };
