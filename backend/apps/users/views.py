@@ -413,7 +413,8 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         
         # Update user standard fields
         if 'email' in request.data:
-            instance.email = request.data['email']
+            if request.data['email'] != instance.email:
+                return Response({'error': 'Email address cannot be changed'}, status=status.HTTP_400_BAD_REQUEST)
         if 'first_name' in request.data:
             instance.first_name = request.data['first_name']
         if 'last_name' in request.data:

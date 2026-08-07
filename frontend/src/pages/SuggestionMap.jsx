@@ -61,7 +61,7 @@ export default function SuggestionMap() {
       lat: Number(selLat),
       lon: Number(selLon),
       label: `Original Site (${selScore.toFixed(1)}/100)`,
-      color: '#EF4444'
+      color: 'var(--c-error)'
     });
   }
   if (sugLat && sugLon) {
@@ -69,7 +69,7 @@ export default function SuggestionMap() {
       lat: Number(sugLat),
       lon: Number(sugLon),
       label: `Optimized Suggested Location (${sugScore.toFixed(1)}/100)`,
-      color: '#10B981'
+      color: 'var(--c-green-500)'
     });
   }
 
@@ -155,16 +155,18 @@ export default function SuggestionMap() {
           position: 'absolute', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 1000, width: 'calc(100% - 32px)', maxWidth: '680px', pointerEvents: 'none'
         }}>
-          <div style={{
-            background: 'var(--c-surface)', border: '1px solid var(--border-default)', borderRadius: '20px',
-            padding: '16px 20px', pointerEvents: 'all',
-            boxShadow: 'var(--shadow-lg)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap'
-          }}>
+          <div
+            style={{
+              background: 'var(--c-surface)', border: '1px solid var(--border-default)', borderRadius: '20px',
+              padding: '16px 20px', pointerEvents: 'all',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4"
+          >
             
             {/* Selected Legend */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#EF4444', border: '2px solid var(--c-surface)' }} />
+              <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'var(--c-error)', border: '2px solid var(--c-surface)' }} />
               <div>
                 <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '750', textTransform: 'uppercase' }}>Selected Location</div>
                 <div style={{ fontSize: '13.5px', fontWeight: '850', color: 'var(--c-error)' }}>{selScore > 0 ? `${selScore.toFixed(1)} / 100` : '—'}</div>
@@ -175,14 +177,14 @@ export default function SuggestionMap() {
 
             {/* Suggested Legend */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10B981', border: '2px solid var(--c-surface)' }} />
+              <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: 'var(--c-green-500)', border: '2px solid var(--c-surface)' }} />
               <div>
                 <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: '750', textTransform: 'uppercase' }}>Optimized Siting</div>
                 <div style={{ fontSize: '13.5px', fontWeight: '850', color: 'var(--c-success)' }}>{sugScore > 0 ? `${sugScore.toFixed(1)} / 100` : '—'}</div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="flex gap-2 w-full sm:w-auto justify-end">
               <button
                 onClick={() => navigate('/report')}
                 className="btn-ghost"

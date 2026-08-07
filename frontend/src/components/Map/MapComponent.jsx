@@ -37,7 +37,7 @@ function PulsingRadarPin() {
       <div style={{
         width: '12px', height: '12px', borderRadius: '50%',
         background: 'var(--c-primary-600)',
-        border: '2px solid var(--text-primary)fff',
+        border: '2px solid var(--text-primary)',
         boxShadow: 'var(--shadow-sm)',
         zIndex: 2,
       }}/>
@@ -113,7 +113,7 @@ function WarningBanner({ message, onClose }) {
       <button
         onClick={onClose}
         style={{
-          background: 'none', border: 'none', color: '#FFF',
+          background: 'none', border: 'none', color: '#fff',
           cursor: 'pointer', marginLeft: '8px', fontSize: '14px', fontWeight: '900'
         }}
       >
@@ -220,14 +220,14 @@ function TrackingPanel({ location, onClear }) {
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: '5px',
             padding: '4px 9px', borderRadius: 'var(--r-full)',
-            background: location.source === 'gps' ? 'rgba(16,185,129,0.12)' : 'rgba(249,115,22,0.12)',
-            border: `1px solid ${location.source === 'gps' ? 'rgba(16,185,129,0.25)' : 'rgba(249,115,22,0.25)'}`,
+            background: location.source === 'gps' ? 'rgba(97,135,100,0.12)' : 'rgba(184,118,41,0.12)',
+            border: `1px solid ${location.source === 'gps' ? 'rgba(97,135,100,0.25)' : 'rgba(184,118,41,0.25)'}`,
           }}>
             <span style={{
               width: '5px', height: '5px', borderRadius: '50%',
               background: location.source === 'gps' ? 'var(--emerald)' : 'var(--orange)',
             }}/>
-            <span style={{ fontSize: '10.5px', fontWeight: '700', color: location.source === 'gps' ? '#34D399' : '#FDBA74' }}>
+            <span style={{ fontSize: '10.5px', fontWeight: '700', color: location.source === 'gps' ? 'var(--c-green-400)' : 'var(--c-warning)' }}>
               {location.source === 'gps' ? 'GPS Lock' : 'Gujarat Territory'}
             </span>
           </div>
@@ -470,11 +470,11 @@ export default function MapComponent({
             anchor="bottom"
           >
             <div style={{
-              background: m.color || '#1F8A70',
+              background: m.color || 'var(--c-green-600)',
               width: '20px',
               height: '20px',
               borderRadius: '50%',
-              border: '2px solid white',
+              border: '2px solid #fff',
               boxShadow: 'var(--shadow-md)',
             }} />
             {m.label && (

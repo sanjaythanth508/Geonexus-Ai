@@ -42,16 +42,9 @@ const ArrowIcon = () => (
 );
 const GlobeIcon = () => (
   <svg width="60" height="60" viewBox="0 0 48 48" fill="none">
-    <circle cx="24" cy="24" r="20" stroke="url(#globeGrad)" strokeWidth="1.5"/>
-    <ellipse cx="24" cy="24" rx="9" ry="20" stroke="url(#globeGrad)" strokeWidth="1.2"/>
-    <line x1="4" y1="24" x2="44" y2="24" stroke="url(#globeGrad)" strokeWidth="1.2"/>
-    <line x1="24" y1="4" x2="24" y2="44" stroke="url(#globeGrad)" strokeWidth="0.8" strokeDasharray="2 3"/>
-    <defs>
-      <linearGradient id="globeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="var(--c-primary-400)"/>
-        <stop offset="100%" stopColor="var(--c-accent-500)"/>
-      </linearGradient>
-    </defs>
+    <circle cx="24" cy="24" r="20" stroke="var(--c-green-700)" strokeWidth="2.5"/>
+    <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-green-700)" strokeWidth="2"/>
+    <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-green-700)" strokeWidth="2"/>
   </svg>
 );
 

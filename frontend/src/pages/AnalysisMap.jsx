@@ -111,7 +111,7 @@ export default function AnalysisMap() {
               padding: '18px 24px',
               boxShadow: 'var(--shadow-xl)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{
                     width: '38px', height: '38px', borderRadius: '10px',

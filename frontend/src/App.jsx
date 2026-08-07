@@ -19,43 +19,39 @@ import CompareTwoPoints from './pages/CompareTwoPoints';
 import CompareTwoIndustries from './pages/CompareTwoIndustries';
 import CompareGeneral from './pages/CompareGeneral';
 
-/* ── Premium Loading Screen ── */
+/* ── Premium Loading Screen (Green Theme) ── */
 function LoadingScreen() {
   return (
     <div style={{
       minHeight: '100vh',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(34,211,238,0.08) 0%, transparent 60%), var(--bg-primary)',
+      background: 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(97,135,100,0.12) 0%, transparent 60%), var(--bg-primary)',
       gap: '20px',
     }}>
       {/* Logo */}
       <div style={{
         width: '56px', height: '56px', borderRadius: '16px',
-        background: 'linear-gradient(135deg, rgba(34,211,238,0.12), rgba(59,130,246,0.12))',
-        border: '1px solid rgba(34,211,238,0.20)',
+        background: 'linear-gradient(135deg, rgba(97,135,100,0.15), rgba(43,87,72,0.15))',
+        border: '1px solid rgba(97,135,100,0.25)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         animation: 'glow-pulse 2s ease-in-out infinite',
       }}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="url(#loadGrad)" strokeWidth="1.5"/>
-          <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="url(#loadGrad)" strokeWidth="1.5"/>
-          <defs>
-            <linearGradient id="loadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#22D3EE"/><stop offset="100%" stopColor="#8B5CF6"/>
-            </linearGradient>
-          </defs>
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="20" stroke="var(--c-green-700)" strokeWidth="2.5"/>
+          <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-green-700)" strokeWidth="2"/>
+          <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-green-700)" strokeWidth="2"/>
         </svg>
       </div>
 
       {/* Spinner ring */}
       <div style={{ position: 'relative', width: '36px', height: '36px' }}>
         <svg width="36" height="36" viewBox="0 0 36 36" style={{ animation: 'spin-slow 1s linear infinite' }}>
-          <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(34,211,238,0.12)" strokeWidth="2"/>
+          <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(97,135,100,0.15)" strokeWidth="2"/>
           <circle cx="18" cy="18" r="15" fill="none" stroke="url(#spinGrad)" strokeWidth="2"
             strokeDasharray="30 66" strokeLinecap="round"/>
           <defs>
             <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#22D3EE"/><stop offset="100%" stopColor="#8B5CF6"/>
+              <stop offset="0%" stopColor="#618764"/><stop offset="100%" stopColor="#2B5748"/>
             </linearGradient>
           </defs>
         </svg>

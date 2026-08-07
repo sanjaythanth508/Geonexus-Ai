@@ -421,14 +421,14 @@ export default function GeoChat() {
               borderRadius: '8px',
               background: '',
               border: '1px solid var(--c-primary-700)',
-              color: 'var(--text-primary)fff',
+              color: 'var(--text-primary)',
               fontSize: '13.5px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-primary-700)'; e.currentTarget.color = ''; }}
-            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.color = 'var(--text-primary)fff';}}
+            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.color = 'var(--text-primary)';}}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round"/>
@@ -569,7 +569,7 @@ export default function GeoChat() {
       {/* Mobile backdrop overlay to close sidebar */}
       {sidebarOpen && (
         <div 
-          className="md:hidden absolute inset-0 bg-black/20 z-40 backdrop-blur-sm transition-opacity"
+          className="md:hidden absolute inset-0 bg-[rgba(26,43,37,0.2)] z-40 backdrop-blur-sm transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -705,10 +705,10 @@ export default function GeoChat() {
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-primary-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-                      <polyline points="2 17 12 22 22 17"/>
-                      <polyline points="2 12 12 17 22 12"/>
+                    <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                      <circle cx="24" cy="24" r="20" stroke="var(--c-green-700)" strokeWidth="2.5"/>
+                      <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-green-700)" strokeWidth="2"/>
+                      <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-green-700)" strokeWidth="2"/>
                     </svg>
                   )}
                 </div>
@@ -806,10 +806,10 @@ export default function GeoChat() {
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-primary-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-                    <polyline points="2 17 12 22 22 17"/>
-                    <polyline points="2 12 12 17 22 12"/>
+                  <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="20" stroke="var(--c-green-700)" strokeWidth="2.5"/>
+                    <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-green-700)" strokeWidth="2"/>
+                    <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-green-700)" strokeWidth="2"/>
                   </svg>
                 </div>
                 <div style={{
@@ -947,7 +947,7 @@ export default function GeoChat() {
                 borderRadius: '50%',
                 flexShrink: 0,
                 background: input.trim() && !isLoading && !isStreaming ? 'var(--c-primary-600)' : 'var(--c-neutral-100)',
-                color: input.trim() && !isLoading && !isStreaming ? 'var(--text-primary)fff' : 'var(--text-muted)',
+                color: input.trim() && !isLoading && !isStreaming ? 'var(--text-primary)' : 'var(--text-muted)',
                 border: 'none',
                 cursor: input.trim() && !isLoading && !isStreaming ? 'pointer' : 'default',
                 display: 'flex',

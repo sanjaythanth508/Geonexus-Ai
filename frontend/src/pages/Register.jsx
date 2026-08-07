@@ -255,12 +255,7 @@ export default function Register() {
       const res = await loginWithGoogle(credentialResponse.credential);
       const data = res.data;
       loginWithTokens(data, data.user?.username || 'Google User');
-      
-      if (data.is_new_user) {
-        navigate('/register', { state: { googleInfo: data.google_info } });
-      } else {
-        navigate('/home');
-      }
+      navigate('/home', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Google Authentication failed.');
       setShakeKey(k => k + 1);
@@ -303,13 +298,9 @@ export default function Register() {
             boxShadow: 'var(--shadow-md)',
           }}>
             <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="20" stroke="url(#heroGl)" strokeWidth="2.5"/>
-              <ellipse cx="24" cy="24" rx="10" ry="20" stroke="url(#heroGl)" strokeWidth="2"/>
-              <defs>
-                <linearGradient id="heroGl" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="var(--c-primary-500)"/><stop offset="100%" stopColor="var(--c-primary-700)"/>
-                </linearGradient>
-              </defs>
+              <circle cx="24" cy="24" r="20" stroke="var(--c-green-700)" strokeWidth="2.5"/>
+              <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-green-700)" strokeWidth="2"/>
+              <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-green-700)" strokeWidth="2"/>
             </svg>
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: '16px' }}>

@@ -43,7 +43,7 @@ function StepBar({ steps, current }) {
 }
 
 // Palette for industries (adjusted for light theme)
-const IND_COLORS = ['#0d9488','var(--c-warning)','var(--c-primary-500)','var(--c-primary-500)','#059669','var(--c-error)','var(--c-primary-500)','#0891b2'];
+const IND_COLORS = ['var(--c-green-600)','var(--c-warning)','var(--c-primary-500)','var(--c-primary-500)','var(--c-green-700)','var(--c-error)','var(--c-primary-500)','var(--c-green-500)'];
 const LOC_COLORS = ['var(--c-primary-600)','var(--c-accent-600)','var(--c-success)','var(--c-primary-500)','var(--c-error)'];
 
 function getScoreColor(s) {

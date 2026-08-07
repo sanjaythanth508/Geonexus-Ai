@@ -247,30 +247,32 @@ export default function SuggestionReport() {
                   ️ Multi-Criteria Evaluation Matrix (MCDA Breakdown)
                 </h3>
                 <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }} className="responsive-table">
-                    <thead>
-                      <tr style={{ background: 'var(--c-surface-alt)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
-                        <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)' }}>Evaluation Metric</th>
-                        <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)', textAlign: 'right' }}>Calculated Score</th>
-                        <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)', textAlign: 'right' }}>Impact Weight</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedCriteria.map(([crit, v], idx) => (
-                        <tr key={crit} style={{ borderBottom: idx < sortedCriteria.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
-                          <td style={{ padding: '10px 14px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'capitalize' }}>
-                            {crit.replace(/_/g, ' ')}
-                          </td>
-                          <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '750', color: 'var(--c-success)' }}>
-                            {(v?.score_100 || 0).toFixed(0)} / 100
-                          </td>
-                          <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-muted)' }}>
-                            {((v?.weight || 0) * 100).toFixed(0)}%
-                          </td>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }} className="responsive-table">
+                      <thead>
+                        <tr style={{ background: 'var(--c-surface-alt)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
+                          <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)' }}>Evaluation Metric</th>
+                          <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)', textAlign: 'right' }}>Calculated Score</th>
+                          <th style={{ padding: '10px 14px', fontWeight: '750', color: 'var(--text-secondary)', textAlign: 'right' }}>Impact Weight</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {sortedCriteria.map(([crit, v], idx) => (
+                          <tr key={crit} style={{ borderBottom: idx < sortedCriteria.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
+                            <td style={{ padding: '10px 14px', fontWeight: '600', color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                              {crit.replace(/_/g, ' ')}
+                            </td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '750', color: 'var(--c-success)' }}>
+                              {(v?.score_100 || 0).toFixed(0)} / 100
+                            </td>
+                            <td style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-muted)' }}>
+                              {((v?.weight || 0) * 100).toFixed(0)}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}

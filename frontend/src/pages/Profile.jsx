@@ -12,7 +12,6 @@ const BriefcaseIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill
 const MapPinIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 const EditIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>;
-const ShieldCheckIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>;
 const CameraIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 
 function LoadSpinner() {
@@ -319,7 +318,7 @@ export default function Profile() {
 
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '24px' }}>
                 <span className="badge badge-cyan" style={{ border: '1px solid var(--c-primary-300)' }}>
-                  <ShieldCheckIcon /> Verified Operator
+                  <BriefcaseIcon /> {jobTitle || 'Operator'}
                 </span>
                 {organization && (
                   <span className="badge badge-purple">{organization}</span>
@@ -402,16 +401,13 @@ export default function Profile() {
                       <input
                         type="email"
                         value={email}
-                        onChange={e => { setEmail(e.target.value); validateField('email', e.target.value); }}
                         className="form-input-field"
                         style={{ paddingLeft: '40px' }}
-                        disabled={!isEditing}
+                        disabled={true}
+                        title="Email address cannot be changed"
                         required
                       />
                     </div>
-                    {validationErrors.email && (
-                      <span style={{ fontSize: '11px', color: 'var(--c-error)', display: 'block' }}>{validationErrors.email}</span>
-                    )}
                   </div>
                 </div>
 

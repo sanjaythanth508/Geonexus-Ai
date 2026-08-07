@@ -49,7 +49,7 @@ function IndustryCard({ industry, selected, onSelect }) {
       </span>
       {selected && (
         <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--c-primary-500)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px' }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--c-dark-950)" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
       )}
     </button>

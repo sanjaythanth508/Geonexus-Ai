@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import ParticleBackground from './ParticleBackground';
 
 /* ── Navigation Icon Components ── */
 const NavIcons = {
@@ -47,13 +48,13 @@ const NavIcons = {
   ),
 };
 
-/* ── Globe Logo SVG ── */
+/* ── Globe Logo SVG (Green themed) ── */
 function GlobeLogo({ size = 28 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      <circle cx="24" cy="24" r="20" stroke="var(--c-primary-900)" strokeWidth="2.5" />
-      <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-primary-900)" strokeWidth="2" />
-      <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-primary-900)" strokeWidth="2" />
+      <circle cx="24" cy="24" r="20" stroke="var(--c-green-700)" strokeWidth="2.5" />
+      <ellipse cx="24" cy="24" rx="9" ry="20" stroke="var(--c-green-700)" strokeWidth="2" />
+      <line x1="4" y1="24" x2="44" y2="24" stroke="var(--c-green-700)" strokeWidth="2" />
     </svg>
   );
 }
@@ -72,16 +73,25 @@ function AuthLayout({ children }) {
       overflow: 'hidden',
       width: '100vw'
     }}>
-      {/* Decorative background pattern */}
+      {/* Particle background */}
+      <ParticleBackground opacity={0.5} />
+
+      {/* Decorative background pattern (green-tinted dots) */}
       <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.5,
-        backgroundImage: 'radial-gradient(var(--c-primary-200) 1px, transparent 1px)',
+        position: 'fixed', inset: 0, pointerEvents: 'none', opacity: 0.35,
+        backgroundImage: 'radial-gradient(var(--c-sage-200) 1px, transparent 1px)',
         backgroundSize: '24px 24px', zIndex: 0
       }} />
       <div style={{
         position: 'absolute', top: '-120px', right: '-80px',
         width: '400px', height: '400px', borderRadius: '50%',
-        background: 'radial-gradient(circle, var(--c-primary-100) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, var(--c-mint-100) 0%, transparent 70%)',
+        pointerEvents: 'none'
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-150px', left: '-100px',
+        width: '350px', height: '350px', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(97,135,100,0.08) 0%, transparent 70%)',
         pointerEvents: 'none'
       }} />
       <div style={{ position: 'relative', zIndex: 1, width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -144,6 +154,8 @@ function DashboardLayout({ children, hideNav = false }) {
       position: 'relative',
       overflowX: 'hidden'
     }}>
+      {/* Particle background for dashboard */}
+      <ParticleBackground opacity={0.35} />
 
       {/* ── Desktop Header / Navbar ── */}
       {!hideNav && (
@@ -152,7 +164,7 @@ function DashboardLayout({ children, hideNav = false }) {
           height: 'var(--nav-h)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 clamp(16px, 4vw, 32px)',
-          background: 'rgba(255, 255, 255, 0.96)',
+          background: 'rgba(242, 247, 240, 0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid var(--border-subtle)',
@@ -161,18 +173,17 @@ function DashboardLayout({ children, hideNav = false }) {
           <Link to="/home" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
-              background: 'var(--c-primary-50)',
-              border: '1px solid var(--c-primary-200)',
+              background: 'var(--c-mint-100)',
+              border: '1px solid var(--c-sage-200)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <GlobeLogo size={18} />
             </div>
             <span style={{
-              fontFamily: 'var(--font-display)', fontWeight: '600', fontSize: '18px',
-              letterSpacing: '-0.02em', color: 'var(--text-primary)'
+              fontFamily: 'var(--font-display)', fontWeight: '850', fontSize: '18.5px',
+              letterSpacing: '-0.025em', color: 'var(--text-primary)'
             }}>
-              GeoNexus
-              <span style={{ color: 'var(--c-primary-400)', fontWeight: '400', marginLeft: '4px' }}>AI</span>
+              GeoNexus-Ai
             </span>
           </Link>
 
@@ -191,9 +202,9 @@ function DashboardLayout({ children, hideNav = false }) {
                     borderRadius: 'var(--r-md)',
                     fontSize: 'var(--fs-sm)',
                     fontWeight: active ? '600' : '500',
-                    color: active ? 'var(--c-primary-900)' : 'var(--text-secondary)',
+                    color: active ? 'var(--c-dark-900)' : 'var(--text-secondary)',
                     textDecoration: 'none',
-                    background: active ? 'var(--c-primary-100)' : 'transparent',
+                    background: active ? 'var(--c-mint-100)' : 'transparent',
                     transition: 'all 0.15s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -202,7 +213,7 @@ function DashboardLayout({ children, hideNav = false }) {
                   onMouseEnter={e => {
                     if (!active) {
                       e.currentTarget.style.color = 'var(--text-primary)';
-                      e.currentTarget.style.background = 'var(--c-primary-50)';
+                      e.currentTarget.style.background = 'var(--c-mint-50)';
                     }
                   }}
                   onMouseLeave={e => {
@@ -212,7 +223,7 @@ function DashboardLayout({ children, hideNav = false }) {
                     }
                   }}
                 >
-                  <span style={{ color: active ? 'var(--c-primary-900)' : 'var(--c-primary-400)', display: 'flex' }}>
+                  <span style={{ color: active ? 'var(--c-dark-900)' : 'var(--c-sage-400)', display: 'flex' }}>
                     {NavIcons[item.icon]}
                   </span>
                   {item.label}
@@ -232,12 +243,12 @@ function DashboardLayout({ children, hideNav = false }) {
                     display: 'flex', alignItems: 'center', gap: '8px',
                     padding: '4px 12px 4px 4px',
                     borderRadius: 'var(--r-full)',
-                    background: profileDropdownOpen ? 'var(--c-primary-50)' : 'transparent',
+                    background: profileDropdownOpen ? 'var(--c-mint-50)' : 'transparent',
                     border: '1px solid transparent',
                     cursor: 'pointer', transition: 'all 0.15s',
                     fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-primary-50)'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-mint-50)'; }}
                   onMouseLeave={e => { if (!profileDropdownOpen) e.currentTarget.style.background = 'transparent'; }}
                 >
                   {avatar ? (
@@ -248,7 +259,7 @@ function DashboardLayout({ children, hideNav = false }) {
                   ) : (
                     <div style={{
                       width: '32px', height: '32px', borderRadius: '50%',
-                      background: 'var(--c-primary-900)',
+                      background: 'linear-gradient(135deg, var(--c-green-600), var(--c-green-700))',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '13px', fontWeight: '600', color: '#fff',
                     }}>
@@ -300,10 +311,10 @@ function DashboardLayout({ children, hideNav = false }) {
                         color: 'var(--text-secondary)', textDecoration: 'none',
                         fontSize: 'var(--fs-sm)', fontWeight: '500', transition: 'all 0.1s'
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-primary-50)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--c-mint-50)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
                     >
-                      <span style={{ color: 'var(--c-primary-400)' }}>{NavIcons.profile}</span>
+                      <span style={{ color: 'var(--c-sage-400)' }}>{NavIcons.profile}</span>
                       Account Settings
                     </Link>
                     <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '6px 0' }} />
@@ -353,13 +364,13 @@ function DashboardLayout({ children, hideNav = false }) {
       {/* ── Mobile Sidebar Drawer ── */}
       {mobileMenuOpen && !hideNav && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop (dark green tinted) */}
           <div
             className="anim-fadeIn"
             onClick={() => setMobileMenuOpen(false)}
             style={{
               position: 'fixed', inset: 0,
-              background: 'rgba(2, 6, 23, 0.4)',
+              background: 'rgba(26, 43, 37, 0.5)',
               backdropFilter: 'blur(2px)',
               zIndex: 998,
             }}
@@ -393,14 +404,14 @@ function DashboardLayout({ children, hideNav = false }) {
                   style={{
                     padding: '12px 14px', borderRadius: 'var(--r-md)',
                     fontSize: 'var(--fs-base)', fontWeight: active ? '600' : '500',
-                    color: active ? 'var(--c-primary-900)' : 'var(--text-secondary)',
+                    color: active ? 'var(--c-dark-900)' : 'var(--text-secondary)',
                     textDecoration: 'none',
-                    background: active ? 'var(--c-primary-50)' : 'transparent',
+                    background: active ? 'var(--c-mint-50)' : 'transparent',
                     display: 'flex', alignItems: 'center', gap: '12px',
                     transition: 'all 0.15s',
                   }}
                 >
-                  <span style={{ color: active ? 'var(--c-primary-900)' : 'var(--c-primary-400)' }}>
+                  <span style={{ color: active ? 'var(--c-dark-900)' : 'var(--c-sage-400)' }}>
                     {NavIcons[item.icon]}
                   </span>
                   {item.label}
@@ -421,7 +432,7 @@ function DashboardLayout({ children, hideNav = false }) {
                 display: 'flex', alignItems: 'center', gap: '12px',
               }}
             >
-              <span style={{ color: 'var(--c-primary-400)' }}>{NavIcons.profile}</span>
+              <span style={{ color: 'var(--c-sage-400)' }}>{NavIcons.profile}</span>
               Settings
             </Link>
             <button
@@ -452,9 +463,11 @@ function DashboardLayout({ children, hideNav = false }) {
           textAlign: 'center', padding: '24px 16px',
           fontSize: 'var(--fs-sm)', color: 'var(--text-muted)',
           borderTop: '1px solid var(--border-subtle)',
-          background: 'var(--c-surface-alt)',
+          background: 'rgba(242, 247, 240, 0.8)',
+          backdropFilter: 'blur(8px)',
+          position: 'relative', zIndex: 1,
         }}>
-          <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>GeoNexus AI</span>
+          <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>GeoNexus-Ai</span>
           <span style={{ margin: '0 8px', color: 'var(--border-bright)' }}>|</span>
           Enterprise Siting Intelligence
         </footer>
@@ -470,4 +483,3 @@ export default function Layout({ children, authTheme = false, hideNav = false })
   }
   return <DashboardLayout hideNav={hideNav}>{children}</DashboardLayout>;
 }
-

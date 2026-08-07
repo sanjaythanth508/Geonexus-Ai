@@ -95,3 +95,36 @@ class UserValidationAndOTPTests(APITestCase):
         # Verification record should be cleaned up/deleted
         self.assertFalse(EmailVerification.objects.filter(email=email).exists())
 
+    def test_profile_email_update_not_allowed(self):
+        # Create a user
+        user = User.objects.create_user(username='testuser', email='test@example.com', password='Password123!')
+        
+        # Authenticate
+        self.client.force_authenticate(user=user)
+        
+        # Try to change email address
+        payload = {
+            'email': 'newemail@example.com',
+            'full_name': 'Test User'
+        }
+        response = self.client.put(self.profile_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'Email address cannot be changed')
+        
+        # Verify email remained unchanged
+        user.refresh_from_db()
+        self.assertEqual(user.email, 'test@example.com')
+        
+        # Try to change other fields while keeping same email
+        payload_same_email = {
+            'email': 'test@example.com',
+            'full_name': 'Updated Test User'
+        }
+        response = self.client.put(self.profile_url, payload_same_email, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify full name updated but email remained same
+        user.refresh_from_db()
+        self.assertEqual(user.profile.full_name, 'Updated Test User')
+        self.assertEqual(user.email, 'test@example.com')
+
