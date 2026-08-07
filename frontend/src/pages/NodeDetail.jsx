@@ -334,38 +334,38 @@ export default function NodeDetail() {
 
         {/* ── HIDDEN PDF GENERATION TEMPLATE ── */}
         <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
-          <div id="node-pdf-template" style={{ width: '700px', background: 'var(--text-primary)', color: 'var(--border-default)', padding: '32px 36px', fontFamily: 'Arial, sans-serif' }}>
-            <div style={{ borderBottom: '2px solid var(--border-default)', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
+          <div id="node-pdf-template" style={{ width: '700px', background: '#ffffff', color: '#1e293b', padding: '32px 36px', fontFamily: 'Arial, sans-serif' }}>
+            <div style={{ borderBottom: '2px solid #cbd5e1', paddingBottom: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '20px', color: 'var(--border-default)', fontWeight: 'bold' }}>GeoNexus AI — Node Siting Report</h2>
-                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--border-default)' }}>Suitability Analysis Audit Summary</p>
+                <h2 style={{ margin: 0, fontSize: '20px', color: '#0f172a', fontWeight: 'bold' }}>GeoNexus AI — Node Siting Report</h2>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>Suitability Analysis Audit Summary</p>
               </div>
-              <div style={{ textAlign: 'right', fontSize: '11px', color: 'var(--border-default)' }}>
+              <div style={{ textAlign: 'right', fontSize: '11px', color: '#475569' }}>
                 <div><strong>Node Name:</strong> {project.name}</div>
                 <div><strong>Date:</strong> {reportDate}</div>
               </div>
             </div>
 
-            <div style={{ background: 'var(--border-default)', border: '1px solid var(--border-default)', borderRadius: '6px', padding: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: '10px', color: 'var(--border-default)', fontWeight: 'bold', textTransform: 'uppercase' }}>Region</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--border-default)' }}>{district}</div>
-                <div style={{ fontSize: '12px', color: 'var(--border-default)' }}>Sector: {industry_type} | Coords: {Number(latitude).toFixed(5)}°N, {Number(longitude).toFixed(5)}°E</div>
+                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Region</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>{district}</div>
+                <div style={{ fontSize: '12px', color: '#334155' }}>Sector: {industry_type} | Coords: {Number(latitude).toFixed(5)}°N, {Number(longitude).toFixed(5)}°E</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '10px', color: 'var(--border-default)', fontWeight: 'bold', textTransform: 'uppercase' }}>Score</div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--border-default)' }}>{scoreNum.toFixed(1)} / 100</div>
+                <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Score</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{scoreNum.toFixed(1)} / 100</div>
                 <div style={{ fontSize: '12px', fontWeight: 'bold', color: badgeColor }}>{categoryLabel}</div>
               </div>
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--border-default)', textTransform: 'uppercase' }}>Infrastructure linkages</h4>
+              <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: '#475569', textTransform: 'uppercase' }}>Infrastructure linkages</h4>
               <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
                 <tbody>
                   <tr>
-                    <td style={{ padding: '8px', background: 'var(--border-default)', border: '1px solid var(--border-default)', width: '50%' }}><strong>Highway:</strong> {nearest_highway_ref} (+{(highway_corridor_bonus * 100).toFixed(0)}%)</td>
-                    <td style={{ padding: '8px', background: 'var(--border-default)', border: '1px solid var(--border-default)', width: '50%' }}><strong>Water:</strong> {nearest_river_name} ({(river_reliability_bonus * 100).toFixed(0)}%)</td>
+                    <td style={{ padding: '8px', background: '#ffffff', border: '1px solid #e2e8f0', color: '#1e293b', width: '50%' }}><strong>Highway:</strong> {nearest_highway_ref} (+{(highway_corridor_bonus * 100).toFixed(0)}%)</td>
+                    <td style={{ padding: '8px', background: '#ffffff', border: '1px solid #e2e8f0', color: '#1e293b', width: '50%' }}><strong>Water:</strong> {nearest_river_name} ({(river_reliability_bonus * 100).toFixed(0)}%)</td>
                   </tr>
                 </tbody>
               </table>
@@ -373,21 +373,21 @@ export default function NodeDetail() {
 
             {sortedCriteria.length > 0 && (
               <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--border-default)', textTransform: 'uppercase' }}>MCDA Breakdown</h4>
+                <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: '#475569', textTransform: 'uppercase' }}>MCDA Breakdown</h4>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
-                  <thead><tr style={{ background: 'var(--border-default)', textAlign: 'left' }}><th style={{ padding: '6px 10px' }}>Metric</th><th style={{ padding: '6px 10px', textAlign: 'right' }}>Score</th><th style={{ padding: '6px 10px', textAlign: 'right' }}>Weight</th></tr></thead>
+                  <thead><tr style={{ background: '#f1f5f9', textAlign: 'left', color: '#475569' }}><th style={{ padding: '6px 10px' }}>Metric</th><th style={{ padding: '6px 10px', textAlign: 'right' }}>Score</th><th style={{ padding: '6px 10px', textAlign: 'right' }}>Weight</th></tr></thead>
                   <tbody>{sortedCriteria.map(([crit, v], i) => (
-                    <tr key={crit} style={{ background: i % 2 ? 'var(--border-default)' : 'var(--text-primary)', borderBottom: '1px solid var(--border-default)' }}>
+                    <tr key={crit} style={{ background: i % 2 ? '#f8fafc' : '#ffffff', borderBottom: '1px solid #e2e8f0', color: '#1e293b' }}>
                       <td style={{ padding: '6px 10px', textTransform: 'capitalize' }}>{crit.replace(/_/g, ' ')}</td>
                       <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 'bold' }}>{(v?.score_100 || 0).toFixed(0)} / 100</td>
-                      <td style={{ padding: '6px 10px', textAlign: 'right', color: 'var(--border-default)' }}>{((v?.weight || 0) * 100).toFixed(0)}%</td>
+                      <td style={{ padding: '6px 10px', textAlign: 'right', color: '#64748b' }}>{((v?.weight || 0) * 100).toFixed(0)}%</td>
                     </tr>
                   ))}</tbody>
                 </table>
               </div>
             )}
 
-            <div style={{ borderTop: '1px solid var(--border-default)', marginTop: '20px', paddingTop: '8px', fontSize: '10px', color: 'var(--border-default)', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ borderTop: '1px solid #e2e8f0', marginTop: '20px', paddingTop: '8px', fontSize: '10px', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
               <span>GeoNexus AI Geospatial Siting Suite</span><span>Confidential Audit Summary</span>
             </div>
           </div>
